@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import style from "./style.module.css";
+import "./style.css";
 
 function Login() {
     const [data, setData] = useState({ username: "", password: "" });
@@ -28,10 +28,10 @@ function Login() {
 
     return (
         <>
-            <div className={style.login_container}>
-                <div className={style.login_form_container}>
-                    <form className={style.form_container} onSubmit={handleSubmit}>
-                        <h1>Login</h1>
+            <div className="login_container">
+                <div className="login_form_container">
+                    <form className="form_container" onSubmit={handleSubmit}>
+                        <h1 className="">Login</h1>
                         <input
                             type="text"
                             name="username"
@@ -39,7 +39,7 @@ function Login() {
                             onChange={handleChange}
                             placeholder="Username"
                             required
-                            className={style.input}
+                            className="input"
                         />
                         <input
                             type="password"
@@ -48,10 +48,10 @@ function Login() {
                             onChange={handleChange}
                             placeholder="Password"
                             required
-                            className={style.input}
+                            className="input"
                         />
                         {error && <div className="style.error_msg">{error}</div>}
-                        <button type="submit" className="style.login_btn">
+                        <button type="submit" className="login_btn">
                             Log In
                         </button>
                     </form>
