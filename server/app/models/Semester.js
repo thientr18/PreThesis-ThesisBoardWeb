@@ -14,11 +14,24 @@ Semester.init({
     },
     startDate: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isDate: true,
+            notEmpty: true
+        }
     },
     endDate: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isDate: true,
+            notEmpty: true,
+            isAfterStartDate(value) {
+                if (value <= this.startDate) {
+                    throw new Error('End date must be after start date');
+                }
+            }
+        }
     },
     isActive: {
         type: DataTypes.BOOLEAN,
@@ -26,7 +39,8 @@ Semester.init({
     },
 }, {
     sequelize,
-    modelName: 'Semesters',
+    modelName: 'Semester',
+    tableName: 'semesters',
     timestamps: true
 });
 

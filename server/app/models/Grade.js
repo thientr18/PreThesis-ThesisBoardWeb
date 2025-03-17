@@ -28,7 +28,11 @@ Grade.init({
     },
     grade: {
         type: DataTypes.DOUBLE,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            min: 0,
+            max: 100,
+        }
     },
     comment: {
         type: DataTypes.TEXT,
@@ -36,7 +40,8 @@ Grade.init({
     },
 }, {
     sequelize,
-    modelName: 'Grades',
+    modelName: 'Grade',
+    tableName: 'grades',
     timestamps: true
 });
 

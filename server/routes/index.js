@@ -1,10 +1,10 @@
-const { checkUser } = require('../app/middlewares/authN');
 const auth = require('./auth');
-const { models } = require('../app/models');
+const site = require('./site');
+const { authenticateToken } = require('../app/middlewares/auth');
 
 function route (app) {
-  app.get('*', checkUser);
-  app.use('/auth', auth);
+  app.use('/api/auth', auth);
+  app.use('/', authenticateToken, site)
 }
 
 module.exports = route;

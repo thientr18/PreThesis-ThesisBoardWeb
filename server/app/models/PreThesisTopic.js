@@ -83,7 +83,8 @@ PreThesisTopic.init({
     },
 }, {
     sequelize,
-    modelName: 'PreThesisTopics',
+    modelName: 'PreThesisTopic',
+    tableName: 'pre_thesis_topics',
     timestamps: true
 });
 

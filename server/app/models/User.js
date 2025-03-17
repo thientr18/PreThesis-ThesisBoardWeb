@@ -1,40 +1,22 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/dbConfig');
 const bcrypt = require('bcrypt');
+const joi = require('joi');
 
-class User extends Model {
-    static async login(email, password) {
-        try {
-            const user = await User.findOne({ where: { email } });
-            if (!user) throw new Error("Incorrect email");
-            console.log(`[USER LOGIN] ${user.email}`);
-        
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) throw new Error("Incorrect password");
-        
-            return user;
-        } catch (error) {
-            throw error;
-        }
-    };
-}
+class User extends Model { }
 User.init({
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    userId: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-    },
-    email: {
+    username: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        lowercase: true,
         validate: {
-            isEmail: true
+            len: [3, 20]
         }
     },
     password: {
@@ -44,11 +26,18 @@ User.init({
     role: {
         type: DataTypes.ENUM('admin', 'moderator', 'teacher', 'student'),
         allowNull: false,
-        defaultValue: 'student'
+        defaultValue: 'student',
+        validate: {
+            isIn: {
+                args: [['admin', 'moderator', 'teacher', 'student']],
+                msg: "Role must be one of 'admin', 'moderator', 'teacher', 'student'"
+            }
+        }
     }
 }, {
     sequelize,
-    modelName: 'Users',
+    modelName: 'User',
+    tableName: 'users',
     timestamps: true,
     hooks: {
         beforeCreate: async (user) => {
@@ -74,4 +63,14 @@ User.init({
     }
 });
 
+const validateUser = (user) => {
+    const schema = joi.object({
+        username: joi.string().min(3).max(20).required().label('Username'),
+        password: passwordComplexity().required().label('Password'),
+        role: joi.string().valid('admin', 'moderator', 'teacher', 'student').required().label('Role'),
+    });
+    return schema.validate(user);
+}
+
 module.exports = User;
+module.exports.validateUser = validateUser;

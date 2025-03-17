@@ -67,16 +67,24 @@ StudentPreThesis.init({
     },
     dueDate: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isDate: true,
+            isAfter: new Date().toISOString()
+        }
     },
     status: {
-        type: DataTypes.ENUM('PENDING', 'SUBMITTED', 'APPROVED', 'FAILED'),
+        type: DataTypes.ENUM('pending', 'submitted', 'approved', 'failed'),
         allowNull: false,
-        defaultValue: 'PENDING'
+        defaultValue: 'pending',
+        validate: {
+            isIn: [['pending', 'submitted', 'approved', 'failed']]
+        }
     }
 }, {
     sequelize,
     modelName: 'StudentPreThesis',
+    tableName: 'student_pre_theses',
     timestamps: true,
     indexes: [{
         unique: true,

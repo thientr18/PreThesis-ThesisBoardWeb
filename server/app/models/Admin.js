@@ -10,12 +10,12 @@ Admin.init({
         autoIncrement: true
     },
     userId: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: false,
         unique: true,
         references: {
             model: User,
-            key: 'userId'
+            key: 'id'
         }
     },
     fullName: {
@@ -26,17 +26,29 @@ Admin.init({
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        lowercase: true,
         validate: {
-            isEmail: true
+            isEmail: true,
         }
     },
     phone: {
         type: DataTypes.STRING,
-        allowNull: false
+        unique: true,
+        allowNull: false,
+        validate: {
+            len: [10, 11],
+            isNumeric: {
+                args: true,
+                msg: "Phone number must contain only numbers"
+            }
+        }
     },
     birthDate: {
         type: DataTypes.DATE,
         allowNull: true,
+        validate: {
+            isDate: true
+        }
     },
     address: {
         type: DataTypes.STRING,
@@ -44,7 +56,8 @@ Admin.init({
     },
 }, {
     sequelize,
-    modelName: 'Admins',
+    modelName: 'Admin',
+    tableName: 'admins',
     timestamps: true
 });
 

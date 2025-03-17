@@ -5,11 +5,6 @@ const Thesis = require('./Thesis');
 
 class ThesisTeacher extends Model {}
 ThesisTeacher.init({
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
     thesisId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -28,11 +23,15 @@ ThesisTeacher.init({
     },
     role: {
         type: DataTypes.ENUM('supervisor', 'reviewer', 'committee'),
-        allowNull: false
+        allowNull: false,
+        validate: {
+            isIn: [['supervisor', 'reviewer', 'committee']]
+        }
     }
 }, {
     sequelize,
-    modelName: 'ThesisTeachers',
+    modelName: 'ThesisTeacher',
+    tableName: 'thesis_teachers',
     timestamps: true
 });
 

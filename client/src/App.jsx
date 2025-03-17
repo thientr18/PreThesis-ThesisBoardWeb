@@ -1,35 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Route, Routes, Navigate } from "react-router-dom"
+import Login from "./components/Login/"
+import Main from "./components/Main"
+import ProtectedRoute from "./components/ProtectedRoute"
+import Admin from "./components/Admin"
+import Moderator from "./components/Moderator"
+import Student from "./components/Student"
+import Teacher from "./components/Teacher"
 
 function App() {
-  const [count, setCount] = useState(0)
+  const user = localStorage.getItem("accessToken");
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Routes>
+      {user && <Route path='/' axact element={<Main />} />}
+        <Route path="/login" exact element={<Login />} />
+
+        <Route path="/" element={
+          <ProtectedRoute allowedRoles={["student", "teacher", "moderator", "admin"]}>
+            <Main />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/student" element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <Student />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/teacher" element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <Teacher />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/moderator" element={
+          <ProtectedRoute allowedRoles={["moderator"]}>
+            <Moderator />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Admin />
+          </ProtectedRoute>
+        } />
+        <Route path="*" exact element={<Navigate replace to="/login" />} />
+      </Routes>
     </>
-  )
+  );
 }
 
 export default App
+
+// import { Route, Routes, Navigate } from "react-router-dom"
+// import Login from "./components/Login/"
+// import Main from "./components/Main"
+
+// function App() {
+//   const user = localStorage.getItem("accessToken");
+
+//   return (
+//     <>
+//       <Routes>
+//       {user && <Route path='/' axact element={<Main />} />}
+//         <Route path="/login" exact element={<Login />} />
+//         <Route path="*" exact element={<Navigate replace to="/login" />} />
+//       </Routes>
+//     </>
+//   );
+// }
+
+// export default App

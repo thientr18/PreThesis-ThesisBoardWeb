@@ -23,8 +23,8 @@ StudentSemester.init({
     }
 }, {
     sequelize,
-    modelName: 'StudentSemesters',
-    tableName: 'StudentSemesters',
+    modelName: 'StudentSemester',
+    tableName: 'student_semesters',
     timestamps: false
 });
 
