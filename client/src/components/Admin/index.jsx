@@ -1,4 +1,4 @@
-import style from './style.module.css';
+import style from './style.css';
 import axios from "axios";
 
 const Main = () => {
@@ -17,10 +17,10 @@ const Main = () => {
 	};
 
     return (
-        <div className={style.main_container}>
-            <nav className={style.nav_bar}>
+        <div className="main_container">
+            <nav className="nav_bar">
                 <h1>Admin Dashboard</h1>
-                <button className={style.loggout} onClick={handleLogout}>Logout</button>
+                <button className="loggout" onClick={handleLogout}>Logout</button>
             </nav>
         </div>
     )
