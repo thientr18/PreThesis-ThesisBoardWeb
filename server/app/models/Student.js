@@ -11,7 +11,7 @@ Student.init({
     },
     userId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         unique: true,
         references: {
             model: User,
@@ -71,15 +71,16 @@ Student.init({
             max: 100
         }
     },
-    canDoThesis: {
-        type: DataTypes.BOOLEAN,
+    status: {
+        type: DataTypes.ENUM('active', 'inactive', 'graduated', 'dropped'),
         allowNull: false,
-        defaultValue: false
-    },
-    doingThesis: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+        defaultValue: 'active',
+        validate: {
+            isIn: {
+                args: [['active', 'inactive', 'graduated', 'dropped']],
+                msg: "Status must be one of 'active', 'inactive', 'graduated', 'dropped'"
+            }
+        }
     },
 }, {
     sequelize,

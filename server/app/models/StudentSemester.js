@@ -7,7 +7,7 @@ class StudentSemester extends Model {}
 StudentSemester.init({
     studentId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Student,
             key: 'id'
@@ -15,17 +15,34 @@ StudentSemester.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
         }
-    }
+    },
+    type: {
+        type: DataTypes.ENUM('null', 'pre-thesis', 'thesis', 'failed-pre-thesis', 'failed-thesis'),
+        allowNull: false,
+        defaultValue: 'null',
+        validate: {
+            isIn: {
+                args: [['null', 'pre-thesis', 'thesis', 'failed-pre-thesis', 'failed-thesis']],
+                msg: "Type must be one of 'null', 'pre-thesis', 'thesis', 'failed-pre-thesis', or 'failed-thesis'"
+            }
+        }
+    },
 }, {
     sequelize,
     modelName: 'StudentSemester',
     tableName: 'student_semesters',
-    timestamps: false
+    timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['studentId', 'semesterId']
+        }
+    ]
 });
 
 module.exports = StudentSemester;

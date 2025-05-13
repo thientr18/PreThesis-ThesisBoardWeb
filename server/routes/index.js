@@ -1,10 +1,18 @@
 const auth = require('./auth');
+const admin = require('./admin');
 const site = require('./site');
-const { authenticateToken } = require('../app/middlewares/auth');
+const { authenticateToken, authorizeRoles } = require('../app/middlewares/auth');
 
-function route (app) {
+function router (app) {
   app.use('/api/auth', auth);
-  app.use('/', authenticateToken, site)
+  app.use('/admin', authenticateToken, authorizeRoles(['admin']), admin);
+  // app.use('/moderator',  moderator);
+  app.use('/', site);
+
+  // 404
+  app.use((req, res) => {
+    res.status(404).json({ message: 'Not Found' });
+  });
 }
 
-module.exports = route;
+module.exports = router;

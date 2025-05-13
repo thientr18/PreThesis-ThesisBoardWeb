@@ -12,7 +12,7 @@ Grade.init({
     },
     thesisId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Thesis,
             key: 'id'
@@ -20,7 +20,7 @@ Grade.init({
     },
     teacherId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -38,11 +38,33 @@ Grade.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
+    status: {
+        type: DataTypes.ENUM('waiting', 'approved', 'rejected'),
+        allowNull: false,
+        defaultValue: 'waiting',
+        validate: {
+            isIn: {
+                args: [['waiting', 'approved', 'rejected']],
+                msg: "Status must be one of 'waiting', 'approved', or 'rejected'"
+            }
+        }
+    },
+    isFinal: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
 }, {
     sequelize,
     modelName: 'Grade',
     tableName: 'grades',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['thesisId', 'teacherId']
+        }
+    ]
 });
 
 module.exports = Grade;

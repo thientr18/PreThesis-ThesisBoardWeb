@@ -12,11 +12,19 @@ Thesis.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        primaryKey: true,
+        references: {
+            model: Semester,
+            key: 'id'
+        }
     },
     studentId: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        primaryKey: true,
+        references: {
+            model: Student,
+            key: 'id'
+        }
     },
     topic: {
         type: DataTypes.STRING,
@@ -76,7 +84,7 @@ Thesis.init({
     timestamps: true,
     indexes: [{
         unique: true,
-        fields: ['semesterId', 'studentId']
+        fields: ['semesterId', 'studentId'],
     }],
     hooks: {
         

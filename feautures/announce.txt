@@ -1,0 +1,95 @@
+// controllers/announcementController.js
+const Announcement = require('../models/Announcement');
+const AnnouncementRecipients = require('../models/AnnouncementRecipients');
+
+exports.sendAnnouncement = async (req, res) => {
+  const { title, content, receiverIds } = req.body;
+  const senderId = req.user.id;
+
+  try {
+    const announcement = await Announcement.create({ senderId, title, content });
+
+    const recipientData = receiverIds.map(userId => ({
+      announcementId: announcement.id,
+      userId
+    }));
+
+    await AnnouncementRecipients.bulkCreate(recipientData);
+
+    res.status(201).json({ message: "Announcement sent successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to send announcement." });
+  }
+};
+
+
+exports.getUserAnnouncements = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const announcements = await AnnouncementRecipients.findAll({
+      where: { userId, isDeleted: false },
+      include: {
+        model: Announcement,
+        attributes: ['id', 'title', 'content', 'senderId', 'createdAt']
+      },
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.status(200).json(announcements);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to retrieve announcements." });
+  }
+};
+
+
+exports.markAsRead = async (req, res) => {
+  const userId = req.user.id;
+  const { announcementId } = req.params;
+
+  try {
+    await AnnouncementRecipients.update(
+      { isRead: true, readAt: new Date() },
+      { where: { userId, announcementId } }
+    );
+
+    res.status(200).json({ message: "Marked as read." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update status." });
+  }
+};
+
+
+exports.deleteAnnouncement = async (req, res) => {
+  const userId = req.user.id;
+  const { announcementId } = req.params;
+
+  try {
+    await AnnouncementRecipients.update(
+      { isDeleted: true, deletedAt: new Date() },
+      { where: { userId, announcementId } }
+    );
+
+    res.status(200).json({ message: "Deleted announcement for user." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to delete." });
+  }
+};
+
+
+const express = require('express');
+const router = express.Router();
+const announcementController = require('../controllers/announcementController');
+const auth = require('../middlewares/authMiddleware');
+
+router.post('/announcements/send', auth, announcementController.sendAnnouncement);
+router.get('/announcements', auth, announcementController.getUserAnnouncements);
+router.patch('/announcements/:announcementId/read', auth, announcementController.markAsRead);
+router.delete('/announcements/:announcementId', auth, announcementController.deleteAnnouncement);
+
+module.exports = router;
+

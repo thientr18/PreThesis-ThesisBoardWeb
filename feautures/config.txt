@@ -1,0 +1,29 @@
+Create and Manage Student Accounts
+    Full name, email, password
+    Assign role (student)
+    Set active/inactive status
+
+Assign to Semester
+    Choose which semester the student belongs to (e.g., 2025 Term 1)
+    Can reassign to a different semester if needed
+
+Edit Student Profile
+    Update personal info: name, email
+    Update GPA or accumulated credits (if not auto-calculated)
+    Add student ID or program/major info
+
+Control Access
+    Activate/deactivate student accounts
+    Reset passwords
+
+Override Eligibility
+    Mark student as eligible for thesis even if credit % is below 90% (based on rules)
+    Add a manual eligibility flag for exceptions
+
+Assign to Groups or Batches
+    Group students by batch/year, major, or project type
+    Useful for filtering and reporting
+
+View Student Progress
+    View history of student actions (topic application, drop status, submissions)
+    Track pre-thesis and thesis completion status
