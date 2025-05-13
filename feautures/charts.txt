@@ -1,0 +1,41 @@
+🔸 1. Student Status Distribution
+Chart Type: Pie / Doughnut
+
+Data Source: Student.status
+
+Purpose: Visualize how many students are active, inactive, graduated, or dropped.
+
+🔸 2. Students per Semester (by Type)
+Chart Type: Stacked Bar / Grouped Bar
+
+Data Source: StudentSemester.type + Semester.name
+
+Purpose: Compare counts of students involved in pre-thesis, thesis, or those who failed.
+
+🔸 3. GPA Distribution
+Chart Type: Histogram or Line
+
+Data Source: Student.gpa
+
+Purpose: Show GPA distribution or trends.
+
+🔸 4. Thesis Status Breakdown
+Chart Type: Pie / Bar
+
+Data Source: Thesis.status
+
+Purpose: How many students are in each thesis phase (pending, draft, submitted, etc.).
+
+🔸 5. Average Thesis Grade per Semester
+Chart Type: Line
+
+Data Source: Thesis.finalGrade grouped by semesterId (join with Semester.name)
+
+Purpose: Track how thesis grades are trending over semesters.
+
+🔸 6. Pre-Thesis vs Thesis Participation Over Time
+Chart Type: Line or Area
+
+Data Source: Count of students in StudentPreThesis and Thesis per semester
+
+Purpose: Compare engagement over time.

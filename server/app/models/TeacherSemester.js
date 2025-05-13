@@ -7,7 +7,7 @@ class TeacherSemester extends Model {}
 TeacherSemester.init({
     teacherId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -15,17 +15,18 @@ TeacherSemester.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
         }
-    }
+    },
+    
 }, {
     sequelize,
     modelName: 'TeacherSemester',
     tableName: 'teacher_semesters',
-    timestamps: false
+    timestamps: true,
 });
 
 module.exports = TeacherSemester;

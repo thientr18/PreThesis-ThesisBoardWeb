@@ -1,5 +1,6 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/dbConfig');
+const User = require('./User');
 
 class Announcement extends Model {}
 Announcement.init({
@@ -7,6 +8,15 @@ Announcement.init({
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
+    },
+    senderId: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        references: {
+            model: User,
+            key: 'id'
+        },
+        defaultValue: "system"
     },
     title: {
         type: DataTypes.STRING,
@@ -16,22 +26,11 @@ Announcement.init({
         type: DataTypes.TEXT,
         allowNull: false
     },
-    sender: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    receiver: {
-        type: DataTypes.STRING,
-        allowNull: false
-    },
-    publishedAt: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW
-    }
 }, {
     sequelize,
     modelName: 'Announcement',
     tableName: 'announcements',
-    timestamps: true
+    timestamps: true,
 });
+
+module.exports = Announcement;

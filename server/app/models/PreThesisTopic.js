@@ -26,7 +26,7 @@ PreThesisTopic.init({
     },
     supervisorId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -34,7 +34,7 @@ PreThesisTopic.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
@@ -81,11 +81,22 @@ PreThesisTopic.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
+    status: {
+        type: DataTypes.ENUM('active', 'inactive', 'deleted'),
+        allowNull: false,
+        defaultValue: 'active',
+        validate: {
+            isIn: {
+                args: [['active', 'inactive', 'deleted']],
+                msg: "Status must be one of 'active', 'inactive', or 'deleted'"
+            }
+        }
+    },
 }, {
     sequelize,
     modelName: 'PreThesisTopic',
     tableName: 'pre_thesis_topics',
-    timestamps: true
+    timestamps: true,
 });
 
 module.exports = PreThesisTopic;

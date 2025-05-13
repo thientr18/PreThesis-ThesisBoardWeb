@@ -5,6 +5,7 @@ const Teacher = require('./Teacher');
 const Student = require('./Student');
 const PreThesisTopics = require('./PreThesisTopic');
 
+// Pre thesis projects of students
 class StudentPreThesis extends Model {}
 StudentPreThesis.init({
     id: {
@@ -14,7 +15,7 @@ StudentPreThesis.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
@@ -22,7 +23,7 @@ StudentPreThesis.init({
     },
     studentId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Student,
             key: 'id'
@@ -30,7 +31,7 @@ StudentPreThesis.init({
     },
     preThesisTopicId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: PreThesisTopics,
             key: 'id'
@@ -38,7 +39,7 @@ StudentPreThesis.init({
     },
     supervisorId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -88,7 +89,8 @@ StudentPreThesis.init({
     timestamps: true,
     indexes: [{
         unique: true,
-        fields: ['semesterId', 'studentId']
+        fields: ['semesterId', 'studentId'],
+        fields: ['preThesisTopicId', 'studentId']
     }]
 });
 

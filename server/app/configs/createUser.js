@@ -1,13 +1,13 @@
-const User = require('../models/User');
 const sequelize = require('./dbConfig'); 
+const User = require('../models/User');
 
 const createUser = async () => {
   try {
     await sequelize.sync();
     
     const user = await User.create({
-      username: 'manager',
-      password: 'manager',
+      username: 'admin1',
+      password: 'admin1',
       role: 'admin',
     });
 
