@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const bcrypt = require('bcrypt');
 const joi = require('joi');
 
@@ -42,9 +42,18 @@ User.init({
     hooks: {
         beforeCreate: async (user) => {
             try {
+<<<<<<< Updated upstream
                 const salt = await bcrypt.genSalt(10);
                 user.password = await bcrypt.hash(user.password, salt);
                 console.log(`[USER CREATED] ${user.userId}`);
+=======
+                if (user.password) {
+                    const salt = await bcrypt.genSalt(10);
+                    user.password = await bcrypt.hash(user.password, salt);
+                }
+                user.username = user.username.toLowerCase();
+                console.log(`[USER CREATED] ${user.username}`);
+>>>>>>> Stashed changes
             } catch (error) {
                 throw error;
             }
@@ -55,7 +64,10 @@ User.init({
                     const salt = await bcrypt.genSalt(10);
                     user.password = await bcrypt.hash(user.password, salt);
                 }
-                console.log(`[USER UPDATED] ${user.userId}`);
+                if (user.changed('username')) {
+                    user.username = user.username.toLowerCase();
+                }
+                console.log(`[USER UPDATED] ${user.username}`);
             } catch (error) {
                 throw error;
             }

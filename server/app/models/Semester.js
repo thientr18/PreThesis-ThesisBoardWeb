@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 
 class Semester extends Model {}
 Semester.init({
@@ -33,6 +33,10 @@ Semester.init({
             }
         }
     },
+    isCurrent: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     isActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
@@ -41,7 +45,29 @@ Semester.init({
     sequelize,
     modelName: 'Semester',
     tableName: 'semesters',
+<<<<<<< Updated upstream
     timestamps: true
+=======
+    timestamps: true,
+    hooks: {
+        beforeCreate: async (semester, options) => {
+            if (semester.isCurrent) {
+                await Semester.update({ isCurrent: false }, { where: { isCurrent: true } });
+            }
+            if (semester.isActive) {
+                await Semester.update({ isActive: false }, { where: { isActive: true } });
+            }
+        },
+        beforeUpdate: async (semester, options) => {
+            if (semester.isCurrent) {
+                await Semester.update({ isCurrent: false }, { where: { isCurrent: true } });
+            }
+            if (semester.isActive) {
+                await Semester.update({ isActive: false }, { where: { isActive: true } });
+            }
+        }
+    }
+>>>>>>> Stashed changes
 });
 
 module.exports = Semester;

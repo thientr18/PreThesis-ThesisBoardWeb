@@ -1,24 +1,10 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const Teacher = require('./Teacher');
 const Semester = require('./Semester');
 
-class PreThesisTopic extends Model {
-    static async createPreThesisTopic(teacherId, semesterId, topic) {
-        try {
-            const preThesisTopic = await PreThesisTopic.create({
-                teacherId,
-                semesterId,
-                topic
-            });
-            console.log(`[PRE-THESIS TOPIC CREATED] ${preThesisTopic.topic}`);
-            return preThesisTopic;
-        } catch (error) {
-            throw error;
-        }
-    };
-}
-PreThesisTopic.init({
+class Topic extends Model { }
+Topic.init({
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -26,15 +12,24 @@ PreThesisTopic.init({
     },
     supervisorId: {
         type: DataTypes.INTEGER,
+<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
         allowNull: false,
+=======
+>>>>>>> Stashed changes:server/app/models/Topic.js
         references: {
             model: Teacher,
             key: 'id'
-        }
+        },
+        unique: false,
+        allowNull: false
     },
     semesterId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
+=======
+        unique: false,
+>>>>>>> Stashed changes:server/app/models/Topic.js
         references: {
             model: Semester,
             key: 'id'
@@ -45,10 +40,10 @@ PreThesisTopic.init({
         allowNull: false
     },
     description: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true
     },
-    totalSlots: {
+    maximumSlots: {
         type: DataTypes.INTEGER,
         allowNull: false,
         validate: {
@@ -73,19 +68,43 @@ PreThesisTopic.init({
     minCredits: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        defaultValue: 90,
         validate: {
             min: 0,
         }
     },
-    otherRequirements: {
+    requirements: {
         type: DataTypes.TEXT,
         allowNull: true
     },
+<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
 }, {
     sequelize,
     modelName: 'PreThesisTopic',
     tableName: 'pre_thesis_topics',
     timestamps: true
+=======
+    status: {
+        type: DataTypes.ENUM('open', 'closed'),
+        allowNull: false,
+        defaultValue: 'open'
+    },
+}, {
+    sequelize,
+    modelName: 'Topic',
+    tableName: 'topics',
+    timestamps: true,
+    hooks: {
+        beforeCreate: (topic, options) => {
+            topic.remainingSlots = topic.maximumSlots;
+        },
+        beforeUpdate: (topic, options) => {
+            if (topic.changed('remainingSlots')) {
+                topic.status = topic.remainingSlots > 0 ? 'open' : 'closed';
+            }
+        }
+    }
+>>>>>>> Stashed changes:server/app/models/Topic.js
 });
 
-module.exports = PreThesisTopic;
+module.exports = Topic;

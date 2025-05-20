@@ -1,7 +1,8 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const Semester = require('./Semester');
 const Student = require('./Student');
+const Teacher = require('./Teacher');
 
 class Thesis extends Model {}
 Thesis.init({
@@ -10,8 +11,27 @@ Thesis.init({
         primaryKey: true,
         autoIncrement: true
     },
+    studentId: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: Student,
+            key: 'id'
+        },
+        allowNull: false,
+        unique: false
+    },
+    supervisorId: {
+        type: DataTypes.INTEGER,
+        references: {
+            model: Teacher,
+            key: 'id'
+        },
+        allowNull: false,
+        unique: false
+    },
     semesterId: {
         type: DataTypes.INTEGER,
+<<<<<<< Updated upstream
         allowNull: false
     },
     studentId: {
@@ -19,7 +39,21 @@ Thesis.init({
         allowNull: false
     },
     topic: {
+=======
+        allowNull: false,
+        unique: false,
+        references: {
+            model: Semester,
+            key: 'id'
+        }
+    },
+    title: {
+>>>>>>> Stashed changes
         type: DataTypes.STRING,
+        allowNull: true
+    },
+    description: {
+        type: DataTypes.TEXT,
         allowNull: true
     },
     report: {
@@ -68,7 +102,7 @@ Thesis.init({
         validate: {
             isIn: [['pending', 'draft', 'submitted', 'pending defense', 'rejected', 'defended', 'complete', 'failed']]
         }
-    }
+    },
 }, {
     sequelize,
     modelName: 'Thesis',
@@ -76,11 +110,12 @@ Thesis.init({
     timestamps: true,
     indexes: [{
         unique: true,
+<<<<<<< Updated upstream
         fields: ['semesterId', 'studentId']
+=======
+        fields: ['studentId', 'semesterId'],
+>>>>>>> Stashed changes
     }],
-    hooks: {
-        
-    }
 });
 
 module.exports = Thesis;

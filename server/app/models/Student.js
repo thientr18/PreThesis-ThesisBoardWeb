@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const User = require('./User');
 
 class Student extends Model {}
@@ -11,7 +11,10 @@ Student.init({
     },
     userId: {
         type: DataTypes.INTEGER,
+<<<<<<< Updated upstream
         allowNull: false,
+=======
+>>>>>>> Stashed changes
         unique: true,
         references: {
             model: User,
@@ -34,7 +37,7 @@ Student.init({
     phone: {
         type: DataTypes.STRING,
         unique: true,
-        allowNull: false,
+        allowNull: true,
         validate: {
             len: [10, 11],
             isNumeric: {
@@ -71,6 +74,7 @@ Student.init({
             max: 100
         }
     },
+<<<<<<< Updated upstream
     canDoThesis: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -80,6 +84,15 @@ Student.init({
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
+=======
+    status: {
+        type: DataTypes.ENUM('active', 'inactive', 'graduated', 'suspended'),
+        allowNull: false,
+        defaultValue: 'inactive',
+        validate: {
+            isIn: [['active', 'inactive', 'graduated', 'suspended']]
+        }
+>>>>>>> Stashed changes
     },
 }, {
     sequelize,

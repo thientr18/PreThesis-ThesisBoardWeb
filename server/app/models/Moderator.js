@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const User = require('./User');
 
 class Moderator extends Model {}
@@ -11,7 +11,10 @@ Moderator.init({
     },
     userId: {
         type: DataTypes.INTEGER,
+<<<<<<< Updated upstream
         allowNull: false,
+=======
+>>>>>>> Stashed changes
         unique: true,
         references: {
             model: User,

@@ -1,17 +1,23 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
-const Semester = require('./Semester');
-const Teacher = require('./Teacher');
+const sequelize = require('../configs/userDB');
+const Topic = require('./Topic');
 const Student = require('./Student');
-const PreThesisTopics = require('./PreThesisTopic');
+const StudentSemester = require('./StudentSemester');
 
+<<<<<<< Updated upstream:server/app/models/StudentPreThesis.js
 class StudentPreThesis extends Model {}
 StudentPreThesis.init({
+=======
+// Pre thesis projects of students
+class PreThesis extends Model {}
+PreThesis.init({
+>>>>>>> Stashed changes:server/app/models/PreThesis.js
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
+<<<<<<< Updated upstream:server/app/models/StudentPreThesis.js
     semesterId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -23,13 +29,18 @@ StudentPreThesis.init({
     studentId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+=======
+    studentId: {
+        type: DataTypes.INTEGER,
+>>>>>>> Stashed changes:server/app/models/PreThesis.js
         references: {
-            model: Student,
-            key: 'id'
+            model: StudentSemester,
+            key: 'studentId'
         }
     },
-    preThesisTopicId: {
+    topicId: {
         type: DataTypes.INTEGER,
+<<<<<<< Updated upstream:server/app/models/StudentPreThesis.js
         allowNull: false,
         references: {
             model: PreThesisTopics,
@@ -41,12 +52,24 @@ StudentPreThesis.init({
         allowNull: false,
         references: {
             model: Teacher,
+=======
+        references: {
+            model: Topic,
+>>>>>>> Stashed changes:server/app/models/PreThesis.js
             key: 'id'
         }
     },
     topic: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    title: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    description: {
+        type: DataTypes.TEXT,
+        allowNull: true
     },
     report: {
         type: DataTypes.STRING,
@@ -67,7 +90,7 @@ StudentPreThesis.init({
     },
     dueDate: {
         type: DataTypes.DATE,
-        allowNull: false,
+        allowNull: true,
         validate: {
             isDate: true,
             isAfter: new Date().toISOString()
@@ -83,13 +106,17 @@ StudentPreThesis.init({
     }
 }, {
     sequelize,
-    modelName: 'StudentPreThesis',
-    tableName: 'student_pre_theses',
+    modelName: 'PreThesis',
+    tableName: 'pre_theses',
     timestamps: true,
     indexes: [{
         unique: true,
+<<<<<<< Updated upstream:server/app/models/StudentPreThesis.js
         fields: ['semesterId', 'studentId']
+=======
+        fields: ['topicId', 'studentId']
+>>>>>>> Stashed changes:server/app/models/PreThesis.js
     }]
 });
 
-module.exports = StudentPreThesis;
+module.exports = PreThesis;
