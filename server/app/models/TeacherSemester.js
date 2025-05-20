@@ -7,7 +7,7 @@ class TeacherSemester extends Model {}
 TeacherSemester.init({
     teacherId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -15,14 +15,11 @@ TeacherSemester.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
         }
-<<<<<<< Updated upstream
-    }
-=======
     },
     maxPreThesisSlots: {
         type: DataTypes.INTEGER,
@@ -56,12 +53,11 @@ TeacherSemester.init({
             min: 0
         }
     },
->>>>>>> Stashed changes
 }, {
     sequelize,
     modelName: 'TeacherSemester',
     tableName: 'teacher_semesters',
-    timestamps: false
+    timestamps: true,
 });
 
 module.exports = TeacherSemester;

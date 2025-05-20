@@ -12,10 +12,8 @@ Topic.init({
     },
     supervisorId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
         allowNull: false,
-=======
->>>>>>> Stashed changes:server/app/models/Topic.js
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -26,10 +24,7 @@ Topic.init({
     semesterId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
-=======
-        unique: false,
->>>>>>> Stashed changes:server/app/models/Topic.js
+        primaryKey: true,
         references: {
             model: Semester,
             key: 'id'
@@ -77,13 +72,21 @@ Topic.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
-<<<<<<< Updated upstream:server/app/models/PreThesisTopic.js
+    status: {
+        type: DataTypes.ENUM('active', 'inactive', 'deleted'),
+        allowNull: false,
+        defaultValue: 'active',
+        validate: {
+            isIn: {
+                args: [['active', 'inactive', 'deleted']],
+                msg: "Status must be one of 'active', 'inactive', or 'deleted'"
+            }
+        }
+    },
 }, {
     sequelize,
     modelName: 'PreThesisTopic',
     tableName: 'pre_thesis_topics',
-    timestamps: true
-=======
     status: {
         type: DataTypes.ENUM('open', 'closed'),
         allowNull: false,
@@ -104,7 +107,6 @@ Topic.init({
             }
         }
     }
->>>>>>> Stashed changes:server/app/models/Topic.js
 });
 
 module.exports = Topic;

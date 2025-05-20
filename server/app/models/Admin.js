@@ -11,7 +11,7 @@ Admin.init({
     },
     userId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         unique: true,
         references: {
             model: User,

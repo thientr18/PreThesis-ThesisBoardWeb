@@ -1,7 +1,31 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/userDB');
 
-class Semester extends Model {}
+class Semester extends Model {
+    static async setActiveSemester(id) {
+        const t = await sequelize.transaction();
+        try {
+            // Set all semesters to inactive
+            await Semester.update({ isActive: false }, { where: {}, transaction: t });
+
+            const [affectedCount, [updatedSemester]] = await Semester.update(
+                { isActive: true },
+                {
+                    where: { id },
+                    returning: true,
+                    transaction: t
+                }
+            );
+
+            await t.commit();
+            return updatedSemester;
+        } catch (error) {
+            await t.rollback();
+            throw error;
+        }
+    }
+
+}
 Semester.init({
     id: {
         type: DataTypes.INTEGER,
@@ -45,9 +69,6 @@ Semester.init({
     sequelize,
     modelName: 'Semester',
     tableName: 'semesters',
-<<<<<<< Updated upstream
-    timestamps: true
-=======
     timestamps: true,
     hooks: {
         beforeCreate: async (semester, options) => {
@@ -67,7 +88,6 @@ Semester.init({
             }
         }
     }
->>>>>>> Stashed changes
 });
 
 module.exports = Semester;

@@ -7,7 +7,7 @@ class ThesisTeacher extends Model {}
 ThesisTeacher.init({
     thesisId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Thesis,
             key: 'id'
@@ -15,7 +15,7 @@ ThesisTeacher.init({
     },
     teacherId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -32,7 +32,13 @@ ThesisTeacher.init({
     sequelize,
     modelName: 'ThesisTeacher',
     tableName: 'thesis_teachers',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['thesisId', 'teacherId', 'role']
+        }
+    ]
 });
 
 module.exports = ThesisTeacher;

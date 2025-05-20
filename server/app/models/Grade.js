@@ -21,10 +21,8 @@ Grade.init({
     },
     thesisId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream
         allowNull: false,
-=======
->>>>>>> Stashed changes
+        primaryKey: true,
         references: {
             model: Thesis,
             key: 'id'
@@ -33,10 +31,8 @@ Grade.init({
     },
     teacherId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream
         allowNull: false,
-=======
->>>>>>> Stashed changes
+        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'
@@ -63,25 +59,34 @@ Grade.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
+    status: {
+        type: DataTypes.ENUM('waiting', 'approved', 'rejected'),
+        allowNull: false,
+        defaultValue: 'waiting',
+        validate: {
+            isIn: {
+                args: [['waiting', 'approved', 'rejected']],
+                msg: "Status must be one of 'waiting', 'approved', or 'rejected'"
+            }
+        }
+    },
+    isFinal: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
 }, {
     sequelize,
     modelName: 'Grade',
     tableName: 'grades',
-<<<<<<< Updated upstream
-    timestamps: true
-=======
     timestamps: true,
     indexes: [
         {
             unique: true,
-            fields: ['thesisId', 'teacherId']
-        },
-        {
-            unique: true,
+            fields: ['thesisId', 'teacherId'],
             fields: ['preThesisId', 'teacherId']
         }
     ]
->>>>>>> Stashed changes
 });
 
 module.exports = Grade;

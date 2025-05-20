@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import AdminNavbar from "@/components/header/admin/AdminNavbar";
+import AdminNavbar from "@/components/header/AdminNavbar";
 import AdminSidebar from "@/components/sidebar/AdminSidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
 

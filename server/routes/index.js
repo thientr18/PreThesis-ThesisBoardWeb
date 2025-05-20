@@ -11,7 +11,7 @@ const { authenticateToken, authorizeRoles } = require('../app/middlewares/auth')
 const Student = require('../app/models/Student');
 >>>>>>> Stashed changes
 
-function route (app) {
+function router (app) {
   app.use('/api/auth', auth);
 <<<<<<< Updated upstream
   app.use('/', authenticateToken, site)
@@ -29,4 +29,4 @@ function route (app) {
 >>>>>>> Stashed changes
 }
 
-module.exports = route;
+module.exports = router;

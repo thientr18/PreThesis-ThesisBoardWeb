@@ -1,6 +1,6 @@
 const { hash } = require('bcrypt');
 const { models } = require('../models');
-const sequelize = require('./dbConfig');
+const sequelize = require('./userDB');
 
 const seedDatabase = async () => {
   try {

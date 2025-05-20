@@ -11,10 +11,7 @@ Student.init({
     },
     userId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream
         allowNull: false,
-=======
->>>>>>> Stashed changes
         unique: true,
         references: {
             model: User,
@@ -74,7 +71,6 @@ Student.init({
             max: 100
         }
     },
-<<<<<<< Updated upstream
     canDoThesis: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -84,7 +80,7 @@ Student.init({
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
-=======
+    },
     status: {
         type: DataTypes.ENUM('active', 'inactive', 'graduated', 'suspended'),
         allowNull: false,
@@ -92,7 +88,6 @@ Student.init({
         validate: {
             isIn: [['active', 'inactive', 'graduated', 'suspended']]
         }
->>>>>>> Stashed changes
     },
 }, {
     sequelize,

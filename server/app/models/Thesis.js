@@ -31,15 +31,20 @@ Thesis.init({
     },
     semesterId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: Semester,
+            key: 'id'
+        }
     },
     studentId: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        references: {
+            model: Student,
+            key: 'id'
+        }
     },
     topic: {
-=======
         allowNull: false,
         unique: false,
         references: {
@@ -48,7 +53,6 @@ Thesis.init({
         }
     },
     title: {
->>>>>>> Stashed changes
         type: DataTypes.STRING,
         allowNull: true
     },
@@ -110,11 +114,7 @@ Thesis.init({
     timestamps: true,
     indexes: [{
         unique: true,
-<<<<<<< Updated upstream
         fields: ['semesterId', 'studentId']
-=======
-        fields: ['studentId', 'semesterId'],
->>>>>>> Stashed changes
     }],
 });
 

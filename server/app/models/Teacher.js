@@ -11,7 +11,7 @@ Teacher.init({
     },
     userId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        primaryKey: true,
         unique: true,
         references: {
             model: User,
@@ -53,6 +53,17 @@ Teacher.init({
     address: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('active', 'inactive'),
+        allowNull: false,
+        defaultValue: 'active',
+        validate: {
+            isIn: {
+                args: [['active', 'inactive']],
+                msg: "Status must be one of 'active', 'inactive'"
+            }
+        }
     },
 }, {
     sequelize,

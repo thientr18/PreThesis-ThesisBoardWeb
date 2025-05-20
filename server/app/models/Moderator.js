@@ -11,10 +11,8 @@ Moderator.init({
     },
     userId: {
         type: DataTypes.INTEGER,
-<<<<<<< Updated upstream
         allowNull: false,
-=======
->>>>>>> Stashed changes
+        primaryKey: true,
         unique: true,
         references: {
             model: User,
@@ -56,6 +54,17 @@ Moderator.init({
     address: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('active', 'inactive'),
+        allowNull: false,
+        defaultValue: 'active',
+        validate: {
+            isIn: {
+                args: [['active', 'inactive']],
+                msg: "Status must be one of 'active' or 'inactive'"
+            }
+        }
     },
 }, {
     sequelize,
