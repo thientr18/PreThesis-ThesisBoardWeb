@@ -1,6 +1,7 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/userDB');
 const StudentSemester = require('./StudentSemester');
+const Topic = require('./Topic');
 
 class PreThesis extends Model {}
 PreThesis.init({
@@ -8,14 +9,6 @@ PreThesis.init({
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
-    },
-    semesterId: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        references: {
-            model: Semester,
-            key: 'id'
-        }
     },
     studentId: {
         type: DataTypes.INTEGER,
@@ -31,21 +24,9 @@ PreThesis.init({
         allowNull: false,
         primaryKey: true,
         references: {
-            model: PreThesisTopics,
+            model: Topic,
             key: 'id'
         }
-    },
-    supervisorId: {
-        type: DataTypes.INTEGER,
-    supervisorId: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        references: {
-            model: 'Teacher',
-            key: 'id'
-        }
-    },
-    topic: {
     },
     title: {
         type: DataTypes.STRING,
@@ -88,7 +69,6 @@ PreThesis.init({
             isIn: [['pending', 'submitted', 'approved', 'failed']]
         }
     }
-    }
 }, {
     sequelize,
     modelName: 'PreThesis',
@@ -97,11 +77,9 @@ PreThesis.init({
     indexes: [
         {
             unique: true,
-            fields: ['semesterId', 'studentId']
-        },
-        {
-            unique: true,
-            fields: ['topicId', 'studentId']
+            fields: ['studentId', 'topicId']
         }
     ]
 });
+
+module.exports = PreThesis;

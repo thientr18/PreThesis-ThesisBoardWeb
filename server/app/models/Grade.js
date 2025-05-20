@@ -13,26 +13,23 @@ Grade.init({
     },
     preThesisId: {
         type: DataTypes.INTEGER,
+        allowNull: true,
         references: {
             model: PreThesis,
             key: 'id'
         },
-        allowNull: true
     },
     thesisId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        primaryKey: true,
+        allowNull: true,
         references: {
             model: Thesis,
             key: 'id'
         },
-        allowNull: true
     },
     teacherId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        primaryKey: true,
         references: {
             model: Teacher,
             key: 'id'

@@ -1,6 +1,6 @@
 const { Model, DataTypes } = require('sequelize');
-<<<<<<< Updated upstream
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
+const User = require('./User');
 
 class Announcement extends Model {}
 Announcement.init({
@@ -9,8 +9,6 @@ Announcement.init({
         primaryKey: true,
         autoIncrement: true
     },
-<<<<<<< Updated upstream
-=======
     senderId: {
         type: DataTypes.INTEGER,
         references: {
@@ -20,7 +18,6 @@ Announcement.init({
         unique: false,
         allowNull: false
     },
->>>>>>> Stashed changes
     title: {
         type: DataTypes.STRING,
         allowNull: false

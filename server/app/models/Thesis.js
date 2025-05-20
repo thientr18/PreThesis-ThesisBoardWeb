@@ -37,21 +37,6 @@ Thesis.init({
             key: 'id'
         }
     },
-    studentId: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Student,
-            key: 'id'
-        }
-    },
-    topic: {
-        allowNull: false,
-        unique: false,
-        references: {
-            model: Semester,
-            key: 'id'
-        }
-    },
     title: {
         type: DataTypes.STRING,
         allowNull: true
