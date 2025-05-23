@@ -4,7 +4,7 @@ import api from "@/utils/axios";
 
 const StudentDashboard = () => {
     const { student, loading } = useStudent();
-    const activeStudent = student?.student.status === 'active';
+    const activeStudent = student?.status === 'active';
     if (loading) {
         return <div className="student-dashboard">Loading...</div>;
     }

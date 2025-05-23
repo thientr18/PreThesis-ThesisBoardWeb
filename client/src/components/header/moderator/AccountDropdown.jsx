@@ -33,11 +33,6 @@ export default function AccountDropdown() {
         <span className="label">All Reports</span>
       </a>
 
-      <a className="dropdown-item" href="/moderator/audit-logs">
-        <img className="icon" src="/audit-logs.svg" alt="Audit Logs" />
-        <span className="label">Audit Logs</span>
-      </a>
-
       <button className="dropdown-item" onClick={handleLogout}>
         <img className="icon" src="/logout.svg" alt="Logout" />
         <span className="label">Logout</span>

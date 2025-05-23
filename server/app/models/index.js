@@ -1,7 +1,5 @@
 const sequelize = require('../configs/userDB');
 const Admin = require('./Admin');
-const Announcement = require('./Announcement');
-const AnnouncementRecipients = require('./AnnouncementRecipients');
 const Grade = require('./Grade');
 const Moderator = require('./Moderator');
 const PreThesis = require('./PreThesis');
@@ -17,8 +15,6 @@ const User = require('./User');
 
 const models = {
   Admin,
-  Announcement,
-  AnnouncementRecipients,
   Grade,
   Moderator,
   Semester,
@@ -50,18 +46,6 @@ const syncModels = async () => {
 Admin.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasOne(Admin, { foreignKey: 'userId', as: 'admin' });
 
-// Admin and Announcement
-Announcement.belongsTo(User, { foreignKey: 'senderId', as: 'sender' });
-User.hasMany(Announcement, { foreignKey: 'senderId', as: 'announcements' });
-
-// AnnouncementRecipients and Announcement
-AnnouncementRecipients.belongsTo(Announcement, { foreignKey: 'announcementId', as: 'announcement' });
-Announcement.hasMany(AnnouncementRecipients, { foreignKey: 'announcementId', as: 'recipients' });
-
-// AnnouncementRecipients and User
-AnnouncementRecipients.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-User.hasMany(AnnouncementRecipients, { foreignKey: 'userId', as: 'recipients' });
-
 // Grade and PreThesis
 Grade.belongsTo(PreThesis, { foreignKey: 'preThesisId', as: 'preThesis' });
 PreThesis.hasMany(Grade, { foreignKey: 'preThesisId', as: 'grades' });
@@ -79,8 +63,8 @@ Moderator.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasOne(Moderator, { foreignKey: 'userId', as: 'moderator' });
 
 // PreThesis and Student
-PreThesis.belongsTo(StudentSemester, { foreignKey: 'studentId', targetKey: 'studentId', as: 'studentSemester' });
-StudentSemester.hasMany(PreThesis, { foreignKey: 'studentId', sourceKey: 'studentId', as: 'preThesis' });
+PreThesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
+Student.hasMany(PreThesis, { foreignKey: 'studentId', as: 'preThesis' });
 
 // PreThesis and Topic
 PreThesis.belongsTo(Topic, { foreignKey: 'topicId', as: 'preThesisTopic' });

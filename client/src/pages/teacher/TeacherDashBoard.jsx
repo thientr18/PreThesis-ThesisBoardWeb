@@ -9,8 +9,6 @@ const TeacherDashboard = () => {
         return <div className="teacher-dashboard">Loading...</div>;
     }
 
-    console.log("activeTeacher", isActiveTeacher);
-
     return (
         <div className="teacher-dashboard">
             <h1>Welcome to the Teacher Dashboard</h1>

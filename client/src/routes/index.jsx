@@ -20,18 +20,22 @@ import Registration from '@/pages/teacher/Registration';
 import AssignThesis from '@/pages/teacher/AssignThesis';
 import PreThesisStudent from '@/pages/teacher/PreThesisStudent';
 import ThesisStudent from '@/pages/teacher/ThesisStudent';
+import PreThesisHome from '@/pages/teacher/PreThesisHome';
+import ThesisHome from '@/pages/teacher/ThesisHome';
 
 import StudentLayout from '@/layouts/StudentLayout';
 import StudentDashboard from '@/pages/student/StudentDashboard';
 import TopicList from '@/pages/student/TopicList';
 import ThesisContact from '@/pages/student/ThesisContact';
+import PreThesisHomeStudent from '@/pages/student/PreThesisHome';
+import ThesisContactStudent from '@/pages/student/ThesisContact';
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="/logout" element={<Navigate to="/admin" />} />
+      <Route path="/logout" element={<Navigate to="/login" />} />
       
       <Route
         path="/admin/*"
@@ -71,12 +75,15 @@ const AppRoutes = () => {
           <ProtectedRoute roles={['teacher']}>
             <TeacherLayout>
               <Routes>
+
                 <Route path="/" element={<TeacherDashboard />} />
                 <Route path="/pre-thesis/topic" element={<TeacherTopic />} />
                 <Route path="/pre-thesis/registration" element={<Registration />} />
                 <Route path="/thesis/assign-student" element={<AssignThesis />} />
+                <Route path="/pre-thesis/:preThesisId" element={<PreThesisHome />} />
                 <Route path="/pre-thesis/student" element={<PreThesisStudent />} />
-                <Route path="/thesis/student" element={<ThesisStudent />} />
+                <Route path="/thesis/:thesisId" element={<ThesisHome />} />
+                <Route path="/thesis/student/" element={<ThesisStudent />} />
                 {/* Add more teacher routes here */}
               </Routes>
             </TeacherLayout>
@@ -92,6 +99,8 @@ const AppRoutes = () => {
                 <Route path="/" element={<StudentDashboard />} />
                 <Route path="/topic-list" element={<TopicList />} />
                 <Route path="/contact-supervisor" element={<ThesisContact />} />
+                <Route path="/pre-thesis/:preThesisId" element={<PreThesisHomeStudent />} />
+                <Route path="/thesis/:thesisId" element={<ThesisContactStudent />} />
                 
                 {/* Add more student routes here */}
               </Routes>

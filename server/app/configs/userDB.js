@@ -13,4 +13,13 @@ const sequelize = new Sequelize(
   }
 );
 
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('MySQL database connected!');
+  })
+  .catch((err) => {
+    console.error('MySQL connection error:', err);
+  });
+
 module.exports = sequelize;

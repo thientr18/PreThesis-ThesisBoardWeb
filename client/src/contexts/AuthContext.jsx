@@ -24,13 +24,7 @@ export const AuthProvider = ({ children }) => {
                     },
                     withCredentials: true,
                 });
-
-                if (response.status === 200) {
-                    setUser(response.data.user);
-                    setError(null);
-                } else {
-                    setUser(null);
-                }
+                setUser(response.data.user);
             } catch (error) {
                 console.error('Error fetching user:', error);
                 setUser(null);
@@ -71,7 +65,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("accessToken");
         setError(null);
     };
-
     return (
         <AuthContext.Provider value={{ user, login, logout, loading, error }}>
             {children}

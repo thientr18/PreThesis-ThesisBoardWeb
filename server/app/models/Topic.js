@@ -73,13 +73,13 @@ Topic.init({
         allowNull: true
     },
     status: {
-        type: DataTypes.ENUM('active', 'inactive', 'deleted'),
+        type: DataTypes.ENUM('open', 'closed'),
         allowNull: false,
-        defaultValue: 'active',
+        defaultValue: 'open',
         validate: {
             isIn: {
-                args: [['active', 'inactive', 'deleted']],
-                msg: "Status must be one of 'active', 'inactive', or 'deleted'"
+                args: [['open', 'closed']],
+                msg: "Status must be one of 'open' or 'closed'"
             }
         }
     },

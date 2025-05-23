@@ -13,12 +13,12 @@ export default function AccountDropdown() {
 
   return (
     <div className="account-dropdown">
-      <a className="dropdown-item" href="/admin/profile">
+      <a className="dropdown-item" href="/student/profile">
         <img className="icon" src="/profile.svg" alt="Profile" />
         <span className="label">Profile</span>
       </a>
 
-      <a className="dropdown-item" href="/admin/change-password">
+      <a className="dropdown-item" href="/student/change-password">
         <img className="icon" src="/change-password.svg" alt="Change Password" />
         <span className="label">Change Password</span>
       </a>

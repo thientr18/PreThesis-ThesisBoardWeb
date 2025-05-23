@@ -7,7 +7,7 @@ const ThesisContact = () => {
     const [thesisContacts, setThesisContacts] = useState([]);
     const [error, setError] = useState(null);
     const [loadingThesisContact, setLoadingThesisContact] = useState(true);
-    const activeStudent = student?.student.status === 'active';
+    const activeStudent = student?.status === 'active';
     // activeStudent === false => Unauthorized
     
     useEffect(() => {

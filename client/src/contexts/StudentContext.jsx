@@ -5,6 +5,7 @@ const StudentContext = createContext();
 
 export const StudentProvider = ({ children }) => {
     const [student, setStudent] = useState(null);
+    const [semesters, setSemesters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -13,6 +14,7 @@ export const StudentProvider = ({ children }) => {
             try {
                 const response = await api.get("/student/profile");
                 setStudent(response.data.student);
+                setSemesters(response.data.semesters)
             } catch (error) {
                 console.error("Error fetching student data:", error);
                 setError(error);
@@ -22,9 +24,8 @@ export const StudentProvider = ({ children }) => {
         };
         fetchStudent();
     }, []);
-
     return (
-        <StudentContext.Provider value={{ student, loading, error }}>
+        <StudentContext.Provider value={{ student, semesters, loading, error }}>
             {children}
         </StudentContext.Provider>
     );

@@ -1,21 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import AccountDropdown from "./AccountDropdown";
-import AnnouncementDropdown from "./AnnouncementDropdown";
+import NotificationDropdown from "./NotificationDropdown";
 
 export default function StudentNavbar({ toggleSidebar }) {
     const [showAccountDropdown, setShowAccountDropdown] = useState(false);
-    const [showAnnouncementDropdown, setShowAnnouncementDropdown] = useState(false);
+    const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
     
     const accountRef = useRef(null);
-    const announcementRef = useRef(null);
+    const notificationRef = useRef(null);
     
     const toggleAccountDropdown = () => {
         setShowAccountDropdown(prev => !prev);
-        setShowAnnouncementDropdown(false); // close other dropdown
+        setShowNotificationDropdown(false); // close other dropdown
     };
     
-    const toggleAnnouncementDropdown = () => {
-        setShowAnnouncementDropdown(prev => !prev);
+    const toggleNotificationDropdown = () => {
+        setShowNotificationDropdown(prev => !prev);
         setShowAccountDropdown(false); // close other dropdown
     };
 
@@ -27,9 +27,9 @@ export default function StudentNavbar({ toggleSidebar }) {
                 setShowAccountDropdown(false);
             }
             if (
-                announcementRef.current && !announcementRef.current.contains(event.target)
+                notificationRef.current && !notificationRef.current.contains(event.target)
             ) {
-                setShowAnnouncementDropdown(false);
+                setShowNotificationDropdown(false);
             }
         };
 
@@ -46,22 +46,22 @@ export default function StudentNavbar({ toggleSidebar }) {
                     src="/sidebar.svg"
                     onClick={toggleSidebar}
                 />
-                <a className="logo-wrapper" href="/student">
+                <a className="logo-wrapper" href="/">
                     <img className="img" alt="Logo" src="/hat-logo.svg" />
                     <div className="text">ThesisBoard</div>
                 </a>
             </div>
 
             <div className="nav-right">
-                <div ref={announcementRef} style={{ position: "relative" }}>
+                <div ref={notificationRef} style={{ position: "relative" }}>
                     <img
-                        className="announcement-btn pointer"
-                        alt="Announcement btn"
-                        src="/announcement-btn.svg"
-                        onClick={toggleAnnouncementDropdown}
+                        className="notification-btn pointer"
+                        alt="Notification btn"
+                        src="/ring.svg"
+                        onClick={toggleNotificationDropdown}
                     />
-                    {showAnnouncementDropdown && (
-                        <AnnouncementDropdown />
+                    {showNotificationDropdown && (
+                        <NotificationDropdown />
                     )}
                 </div>
 

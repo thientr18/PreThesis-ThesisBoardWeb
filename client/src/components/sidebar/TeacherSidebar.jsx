@@ -1,85 +1,82 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useTeacher } from "@/contexts/TeacherContext";
 
 export default function TeacherSidebar() {
-    const { teacher, loading } = useTeacher();
-    const [preThesisOpen, setPreThesisOpen] = useState(false);
-    const [thesisOpen, setThesisOpen] = useState(false);
-    const togglePreThesis = () => setPreThesisOpen((prev) => !prev);
-    const toggleThesis = () => setThesisOpen((prev) => !prev);
+    const { teacher, semesters, loading } = useTeacher();
+    const [openSemester, setOpenSemester] = useState(null);
 
-    const isActiveTeacher = teacher?.status === "active";
-    
     if (loading) {
         return <div className="teacher-sidebar">Loading...</div>;
     }
 
+    // Sort semesters by startDate, latest first
+    const sortedSemesters = [...semesters].sort(
+        (a, b) => new Date(b.semester.startDate) - new Date(a.semester.startDate)
+    );
+
     return (
-    <div className="teacher-sidebar">
-        <div className="sidebar-content">
-            <div className="section">
-                <div className="section-title">Applications</div>
-                <div className="section-content">
-                    <button className="sidebar-btn" onClick={togglePreThesis}>
-                        <img src="/student-icon.svg" alt="student icon" className="icon" />
-                        <span>Pre-Thesis</span>
-                        <img
-                            src={preThesisOpen ? "/caret-up.svg" : "/caret-down.svg"}
-                            alt="caret"
-                            className="caret"
-                        />
-                    </button>
-                    {preThesisOpen && (
-                        <div className="sub-buttons">
-                            {isActiveTeacher && (
-                                <a href="/teacher/pre-thesis/topic">
-                                    <button className="sidebar-btn">
-                                        <span>Topic</span>
-                                    </button>
-                                </a>
+        <div className="teacher-sidebar">
+            <div className="sidebar-content">
+                {sortedSemesters && sortedSemesters.length > 0 ? (
+                    sortedSemesters.map((sem, idx) => (
+                        <div className="section" key={sem.semesterId || idx}>
+                            <div
+                                className="section-title"
+                                onClick={() => setOpenSemester(openSemester === idx ? null : idx)}
+                                style={{ 
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                 }}
+                            >
+                                {sem.semester.name}
+                                <img
+                                    src={openSemester === idx ? "/caret-up.svg" : "/caret-down.svg"}
+                                    alt="caret"
+                                    className="caret"
+                                    style={{ marginLeft: 8}}
+                                />
+
+
+                            </div>
+                            {openSemester === idx && (
+                                <div className="section-content">
+                                    <div className="sub-buttons">
+                                        <a href={`/teacher/pre-thesis/topic`}>
+                                            <button className="sidebar-btn">
+                                                <span>Pre-Thesis Topic</span>
+                                            </button>
+                                        </a>
+                                        <a href={`/teacher/pre-thesis/registration`}>
+                                            <button className="sidebar-btn">
+                                                <span>Pre-Thesis Registration</span>
+                                            </button>
+                                        </a>
+                                        <a href={`/teacher/pre-thesis/student`}>
+                                            <button className="sidebar-btn">
+                                                <span>Pre-Thesis Student</span>
+                                            </button>
+                                        </a>
+                                        <a href={`/teacher/thesis/assign-student`}>
+                                            <button className="sidebar-btn">
+                                                <span>Assign Thesis Student</span>
+                                            </button>
+                                        </a>
+                                        <a href={`/teacher/thesis/student`}>
+                                            <button className="sidebar-btn">
+                                                <span>Thesis Student</span>
+                                            </button>
+                                        </a>
+                                    </div>
+                                </div>
                             )}
-                            {isActiveTeacher && (
-                                <a href="/teacher/pre-thesis/registration">
-                                    <button className="sidebar-btn">
-                                        <span>Registration</span>
-                                    </button>
-                                </a>
-                            )}
-                            <a href="/teacher/pre-thesis/student">
-                                <button className="sidebar-btn">
-                                    <span>Student</span>
-                                </button>
-                            </a>
                         </div>
-                    )}
-                    <button className="sidebar-btn" onClick={toggleThesis}>
-                        <img src="/student-icon.svg" alt="student icon" className="icon" />
-                        <span>Thesis</span>
-                        <img
-                            src={thesisOpen ? "/caret-up.svg" : "/caret-down.svg"}
-                            alt="caret"
-                            className="caret"
-                        />
-                    </button>
-                    {thesisOpen && (
-                        <div className="sub-buttons">
-                            {isActiveTeacher && (
-                                <a href="/teacher/thesis/assign-student">
-                                    <button className="sidebar-btn">
-                                        <span>Assign Student</span>
-                                    </button>
-                                </a>
-                            )}
-                            <a href="/teacher/thesis/student">
-                                <button className="sidebar-btn">
-                                    <span>Student</span>
-                                </button>
-                            </a>
-                        </div>
-                    )}
-                </div>
+                    ))
+                ) : (
+                    <div>No semester data available.</div>
+                )}
             </div>
         </div>
-    </div>
-  );
+    );
 }

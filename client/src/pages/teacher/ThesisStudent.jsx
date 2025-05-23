@@ -10,7 +10,6 @@ const ThesisStudent = () => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [description, setDescription] = useState("");
     const [title, setTitle] = useState("");
-    const [deleteThesis, setDeleteThesis] = useState(false);
 
     const fetchThesisStudents = async () => {
         try {
@@ -41,11 +40,10 @@ const ThesisStudent = () => {
         }
     }
 
-    const handleDeleteThesis = async (studentId) => {
+    const handleDeleteThesis = async (thesisId) => {
         try {
-            const response = await api.delete(`/teacher/thesis/assigned/${studentId}/delete`);
+            const response = await api.delete(`/teacher/thesis/assigned/${thesisId}/delete`);
             fetchThesisStudents();
-            setDeleteThesis(false);
             setSelectedStudent(null);
             setTitle("");
             setDescription("");
@@ -58,8 +56,6 @@ const ThesisStudent = () => {
     if (loading) {
         return <div>Loading...</div>;
     }
-
-
 
     return (
         <div className="thesis-student">
@@ -80,23 +76,19 @@ const ThesisStudent = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {thesisStudents.map((s) => (
-                                <tr key={s.id}>
-                                    <td><a href={`/teacher/thesis/${s.id}`}>[{s.student.user.username}][{s.student.fullName}][{s.title}]</a></td>
+                            {thesisStudents.map((ts) => (
+                                <tr key={ts.id}>
+                                    <td><a href={`/teacher/thesis/${ts.id}`}>[{ts.student.user.username}][{ts.student.fullName}][{ts.title}]</a></td>
                                     <td>
                                         <ul>
                                             <button onClick={() => {
-                                                console.log(s);
-                                            }}>View</button><span> | </span>
-                                            <button onClick={() => {
                                                 setOpenModal(true);
-                                                setSelectedStudent(s.id);
-                                                setTitle(s.title || "");
-                                                setDescription(s.description || "");
+                                                setSelectedStudent(ts.id);
+                                                setTitle(ts.title || "");
+                                                setDescription(ts.description || "");
                                             }}>Edit</button><span> | </span>
                                             <button onClick={() => {
-                                                    setDeleteThesis(true);
-                                                    handleDeleteThesis(s.id);
+                                                    handleDeleteThesis(ts.id);
                                             }}>Remove</button>
                                         </ul>
                                     </td>

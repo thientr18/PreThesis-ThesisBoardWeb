@@ -19,7 +19,6 @@ export default function TopicList() {
         const fetchApplied = async () => {
             try {
                 const response = await api.get(`/student/applied-topic`);
-                console.log("Applied topics:", response.data.approvedTopic);
                 if (response.data.appliedTopics) {
                     setAppliedTopics(response.data.appliedTopics);
                 }

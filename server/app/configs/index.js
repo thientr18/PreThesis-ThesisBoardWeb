@@ -105,6 +105,7 @@ const seedDatabase = async () => {
       { teacherId: teachers[1].id, semesterId: semesters[1].id, maxPreThesisSlots: 10, maxThesisSlots: 10, remainingPreThesisSlots: 10, remainingThesisSlots: 10 },
     ]);
     const studentSemesters = await models.StudentSemester.bulkCreate([
+      // { studentId: students[0].id, semesterId: semesters[0].id, type: 'pre-thesis', isRegistered: true},
       { studentId: students[0].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
       { studentId: students[1].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
       { studentId: students[2].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
@@ -125,18 +126,6 @@ const seedDatabase = async () => {
       { studentId: students[17].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
       { studentId: students[18].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
       { studentId: students[19].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-    ]);
-
-    // Insert Announcements
-    const announcements = await models.Announcement.bulkCreate([
-      { senderId: users[1].id, title: 'Welcome', content: 'Welcome to the system' },
-      { senderId: users[3].id, title: 'Semester Start', content: 'Fall 2025 semester starts soon' },
-    ]);
-
-    // Insert AnnouncementRecipients (use actual announcement IDs if auto-incremented)
-    const announcementRecipients = await models.AnnouncementRecipients.bulkCreate([
-      { announcementId: announcements[0].id, userId: users[0].id, isRead: false },
-      { announcementId: announcements[1].id, userId: users[0].id, isRead: false },
     ]);
 
     console.log('Database seeded successfully!');

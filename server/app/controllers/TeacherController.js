@@ -1,4 +1,5 @@
 const { models, sequelize } = require('../models');
+const Semester = require('../models/Semester');
 const share = require('../utils/share');
 
 class TeacherController {
@@ -8,7 +9,38 @@ class TeacherController {
             const teacher = await share.getTeacherById(teacherId);
             if (!teacher) return res.status(404).json({ message: "Teacher not found" });
 
-            return res.status(200).json(teacher);
+            
+            const activeSemester = await models.Semester.findOne({
+                where: { isActive: true }
+            });
+
+            const currentSemester = await models.Semester.findOne({
+                where: { isCurrent: true }
+            });
+
+            let enrolled = [];
+
+            if ( activeSemester.id === currentSemester.id ) {
+                enrolled = currentSemester
+            } else {
+                enrolled = [activeSemester, currentSemester]
+            }
+
+            const semesters = await models.TeacherSemester.findAll({
+                where: {
+                    teacherId: teacher.id,
+                    semesterId: enrolled.map(t => t.id)
+                },
+                include: [
+                    {
+                        model: Semester,
+                        as: 'semester',
+                        attributes: ['name', 'startDate', 'endDate', 'isCurrent', 'isActive'],
+                    }
+                ],
+                attributes: ['teacherId', 'semesterId']
+            })
+            return res.status(200).json({ teacher, semesters});
         } catch (error) {
             console.error('Error fetching teacher:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -357,6 +389,7 @@ class TeacherController {
                 { status: 'approved' },
                 { where: { id: registrationId }, transaction }
             );
+            console.log('Updated registration:', updatedRegistration);
             const r = await models.PreThesisRegistration.findAll({
                 where: {
                     studentId: registration.studentId,
@@ -439,6 +472,147 @@ class TeacherController {
         } catch (error) {
             console.error('Error rejecting pre-thesis registration:', error);
             await transaction.rollback();
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+    
+    async getPreThesisStudents(req, res) {
+        const userId = req.user.id;
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+            if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+            const semester = await models.Semester.findOne({
+                where: { isActive: true }
+            });
+            if (!semester) return res.status(404).json({ message: "Active semester not found" });
+
+            const teacher = await models.TeacherSemester.findOne({
+                where: {
+                    teacherId: t.id,
+                    semesterId: semester.id
+                }
+            });
+            if (!teacher) {
+                return res.status(404).json({ message: 'Teacher not found' });
+            }
+
+            const topics = await share.getTopicsByTeacherId(teacher.teacherId, teacher.semesterId);
+            if (!topics) return res.status(404).json({ message: "Topics not found", teacher, semester });
+
+            const preThesisStudents = await models.PreThesis.findAll({
+                where: {
+                    topicId: topics.map(topic => topic.id),
+                },
+                include: [
+                    {
+                        model: models.Student,
+                        as: 'student',
+                        attributes: ['id', 'fullName', 'email', 'phone', 'gpa', 'credits'],
+                        include: [
+                            {
+                                model: models.User,
+                                as: 'user',
+                                attributes: ['username'],
+                            }
+                        ]
+                    },
+                    {
+                        model: models.Topic,
+                        as: 'preThesisTopic',
+                        attributes: ['id', 'topic', 'description', 'maximumSlots', 'remainingSlots', 'minGpa', 'minCredits', 'requirements', 'status'],
+                    }
+                ]
+            });
+
+            return res.status(200).json({ message: "Pre-thesis students fetched successfully", preThesisStudents, semester });
+        } catch (error) {
+            console.error('Error fetching pre-thesis students:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async deletePreThesis(req, res) {
+        const { preThesisId } = req.params;
+        try {
+            const preThesis = await models.PreThesis.findOne({
+                where: {
+                    id: preThesisId
+                }
+            });
+            if (!preThesis) {
+                return res.status(404).json({ message: "Pre-thesis not found" });
+            }
+
+            const student = await models.StudentSemester.findOne({
+                where: {
+                    studentId: preThesis.studentId,
+                    semesterId: preThesis.semesterId
+                }
+            });
+            if (!student) {
+                return res.status(404).json({ message: "Student semester not found" });
+            }
+
+            await models.StudentSemester.update(
+                { isRegistered: false },
+                { where: { studentId: preThesis.studentId, semesterId: preThesis.semesterId } }
+            );
+
+            await preThesis.destroy();
+
+            return res.status(200).json({ message: "Thesis deleted successfully" });
+        } catch (error) {
+            console.error('Error deleting thesis:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getPreThesis(req, res) {
+        const userId = req.user.id;
+        const preThesisId = req.params.preThesisId;
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+            if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+            const semester = await models.Semester.findOne({
+                where: { isActive: true }
+            });
+            if (!semester) return res.status(404).json({ message: "Active semester not found" });
+
+            const preThesis = await models.PreThesis.findOne({
+                where: {
+                    id: preThesisId,
+                },
+                include: [
+                    {
+                        model: models.Topic,
+                        as: "preThesisTopic",
+                        where: {
+                            teacherId: t.id,
+                        },
+                        attributes: ['id', 'topic', 'description'],
+                    },
+                    {
+                        model: models.Student,
+                        as: 'student',
+                        attributes: ['id', 'fullName', 'email', 'phone', 'gpa', 'credits'],
+                    }
+                ],
+                attributes: ['id', 'studentId', 'topicId', 'title', 'description', 'report', 'demo', 'grade', 'dueDate', 'status'],
+            });
+
+            if (!preThesis) {
+                return res.status(404).json({ message: "Pre-thesis not found" });
+            }
+
+            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis });
+        } catch (error) {
+            console.error('Error fetching pre-thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
@@ -651,12 +825,12 @@ class TeacherController {
     }
 
     async deleteThesis(req, res) {
-        const { studentId } = req.params;
+        const { thesisId } = req.params;
 
         try {
             const thesis = await models.Thesis.findOne({
                 where: {
-                    id: studentId
+                    id: thesisId
                 }
             });
 
@@ -685,6 +859,52 @@ class TeacherController {
             return res.status(200).json({ message: "Thesis deleted successfully" });
         } catch (error) {
             console.error('Error deleting thesis:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getThesis(req, res) {
+        const userId = req.user.id;
+        const thesisId = req.params.thesisId;
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+            if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+            const semester = await models.Semester.findOne({
+                where: { isActive: true }
+            });
+            if (!semester) return res.status(404).json({ message: "Active semester not found" });
+
+            const thesis = await models.Thesis.findOne({
+                where: {
+                    id: thesisId,
+                    supervisorId: t.id,
+                    semesterId: semester.id
+                },
+                include: [
+                    {
+                        model: models.Student,
+                        as: 'student',
+                        attributes: ['id', 'fullName', 'email', 'phone', 'gpa', 'credits'],
+                        include: [
+                            {
+                                model: models.User,
+                                as: 'user',
+                                attributes: ['username'],
+                            }
+                        ]
+                    }
+                ]
+            });
+
+            if (!thesis) {
+                return res.status(404).json({ message: "Thesis not found" });
+            }
+            return res.status(200).json({ message: "Thesis fetched successfully", thesis });
+        } catch (error) {
+            console.error('Error fetching thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }

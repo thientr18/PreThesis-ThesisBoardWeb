@@ -3,14 +3,14 @@ import { useTeacher } from "@/contexts/TeacherContext";
 import api from "@/utils/axios";
 
 const PreThesisStudent = () => {
-    const { teacher, loading } = useTeacher();
+    const { teacher, semesters, loading } = useTeacher();
     const [semester, setSemester] = useState(null);
     const [preThesisStudents, setPreThesisStudents] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [description, setDescription] = useState("");
     const [title, setTitle] = useState("");
-    const [deletePreThesis, setDeletePreThesis] = useState(false);
+    const [deleteThesis, setDeleteThesis] = useState(false);
 
     const fetchPreThesisStudents = async () => {
         try {
@@ -19,6 +19,7 @@ const PreThesisStudent = () => {
             setSemester(response.data.semester);
             setPreThesisStudents(response.data.preThesisStudents);
         } catch (error) {
+            alert(`Error fetching pre-thesis students: ${error.response?.data?.message || "An error occurred"}`);
             console.error("Error fetching pre-thesis students:", error);
         }
     };
@@ -27,26 +28,11 @@ const PreThesisStudent = () => {
         fetchPreThesisStudents();
     }, []);
 
-
-    const handleEditPreThesis = async (studentId) => {
+    const handleDeletePreThesis = async (preThesisId) => {
         try {
-            const response = await api.post(`/teacher/pre-thesis/assigned/${studentId}/update`, { title, description });
+            const response = await api.delete(`/teacher/pre-thesis/assigned/${preThesisId}/delete`);
             fetchPreThesisStudents();
-            setOpenModal(false);
-            setSelectedStudent(null);
-            setTitle("");
-            setDescription("");
-        } catch (error) {
-            alert(`Error assigning pre-thesis: ${error.response?.data?.message || "An error occurred"}`);
-            console.error("Error assigning pre-thesis:", error);
-        }
-    }
-
-    const handleDeletePreThesis = async (studentId) => {
-        try {
-            const response = await api.delete(`/teacher/pre-thesis/assigned/${studentId}/delete`);
-            fetchPreThesisStudents();
-            setDeletePreThesis(false);
+            setDeleteThesis(false);
             setSelectedStudent(null);
             setTitle("");
             setDescription("");
@@ -54,50 +40,46 @@ const PreThesisStudent = () => {
             alert(`Error deleting pre-thesis: ${error.response?.data?.message || "An error occurred"}`);
             console.error("Error deleting pre-thesis:", error);
         }
-    }
+    };
 
     if (loading) {
         return <div>Loading...</div>;
     }
 
     return (
-        <div className="thesis-student">
-
+        <div className="prethesis-student">
             {semester && (
                 <div className="semester-info">
                     <h1>Semester: {semester.name}</h1>
                 </div>
             )}
 
-            {preThesisStudents.length > 0 && (
-                <div className="assigned-students">
+            {preThesisStudents.length > 0 ? (
+                <div className="assigned-prethesis-students">
                     <h1>Your Pre-Thesis Students</h1>
                     <table className="table">
-                        <tbody>
+                        <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Title</th>
-                                <th>Description</th>
+                                <th>Pre-Thesis</th>
                                 <th>Actions</th>
                             </tr>
-                            {preThesisStudents.map((student) => (
-                                <tr key={student.id}>
-                                    <td>{student.id}</td>
-                                    <td>{student.name}</td>
-                                    <td>{student.title}</td>
-                                    <td>{student.description}</td>
+                        </thead>
+                        <tbody>
+                            {preThesisStudents.map((s) => (
+                                <tr key={s.id}>
+                                    <td><a href={`/teacher/prethesis/${s.id}`}>[{s.student.user.username}][{s.student.fullName}][{s.preThesisTopic.topic}]</a></td>
                                     <td>
-                                        {/* Add your action buttons here */}
-                                        {/* Example: Edit and Delete buttons */}
-                                        <button onClick={() => handleEditPreThesis(student.id)}>Edit</button>
-                                        <button onClick={() => handleDeletePreThesis(student.id)}>Delete</button>
+                                        <button onClick={() => {
+                                                handleDeletePreThesis(s.id);
+                                        }}>Remove</button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+            ) : (
+                <div>No pre-thesis students assigned.</div>
             )}
         </div>
     );

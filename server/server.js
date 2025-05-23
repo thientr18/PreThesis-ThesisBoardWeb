@@ -7,8 +7,13 @@ const dotenv = require('dotenv');
 dotenv.config();
 const PORT = process.env.PORT || 8080;
 
+const socketIO = require('socket.io');
+const http = require('http');
+
 const router = require('./routes/index');
 const { syncModels } = require('./app/models');
+const connectMongo = require('./app/configs/mongoDB');
+const initSocket = require('./app/utils/notificationSocket');
 
 const app = express();
 
@@ -24,11 +29,27 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+const server = http.createServer(app);
+const io = socketIO(server, {
+    cors: {
+        origin: ['http://localhost:5173'],
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+});
+
+// Initialize and store the socket service
+const socketService = initSocket(io);
+app.set('socketService', socketService); 
+
 router(app);
 
-// syncModels() will connect and create tables to the database
+// Connect to MongoDB
+connectMongo();
+
+// syncModels() will connect and create tables to the MySQL database
 syncModels();
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

@@ -1,15 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const AdminController = require("../app/controllers/AdminController");
-const AnnouncementController = require("../app/controllers/AnnouncementController");
-
-// router.get('/announcements/dashboard/', AdminController.getAnnouncementDashboard);
-router.put('/announcements/:id/update', AnnouncementController.updateAnnouncement);
-router.delete('/announcements/:id/delete', AnnouncementController.deleteAnnouncement);
-router.get('/announcements/:id', AnnouncementController.getAnnouncementById);
-router.post('/announcements/new', AnnouncementController.createAnnouncement);
-router.get('/announcements/sent', AnnouncementController.getSentAnnouncements);
-router.get('/announcements/', AnnouncementController.getAnnouncements);
 
 router.get('/home', AdminController.getHomePage);
 router.put('/change-password', AdminController.changePassword);

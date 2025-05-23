@@ -6,31 +6,42 @@ class StudentController {
     async getProfile(req, res) {
         const studentId = req.user.id;
         try {
-            const s = await share.getStudentById(studentId);
-            if (!s) return res.status(404).json({ message: "Student not found" });
-            
-            const semester = await models.Semester.findOne({
+            const student = await share.getStudentById(studentId);
+            if (!student) return res.status(404).json({ message: "Student not found" });
+
+            const activeSemester = await models.Semester.findOne({
                 where: { isActive: true }
             });
-            if (!semester) return res.status(404).json({ message: "Active semester not found" });
 
-            const studentSemester = await models.StudentSemester.findOne({
+            const currentSemester = await models.Semester.findOne({
+                where: { isCurrent: true }
+            });
+
+            let enrolled = [];
+
+            if ( activeSemester.id === currentSemester.id ) {
+                enrolled = currentSemester
+            } else {
+                enrolled = [activeSemester, currentSemester]
+            }
+
+            const semesters = await models.StudentSemester.findAll({
                 where: {
-                    studentId: s.id,
-                    semesterId: semester.id
+                    studentId: student.id,
+                    semesterId: enrolled.map(s => s.id)
                 },
                 include: [
                     {
-                        model: models.Student,
-                        as: 'student',
-                        attributes: ['userId', 'fullName', 'email', 'phone', 'birthDate', 'address', 'credits', 'gpa', 'status'],
+                        model: models.Semester,
+                        as: 'semester',
+                        attributes: ['name', 'startDate', 'endDate', 'isCurrent', 'isActive'],
                     }
                 ],
                 attributes: ['studentId', 'semesterId', 'type', 'isRegistered'],
             });
             return res.status(200).json({
                 message: "Student profile fetched successfully",
-                student: studentSemester
+                student, semesters
             });
         } catch (error) {
             console.error('Error fetching student:', error);
@@ -175,20 +186,23 @@ class StudentController {
                     status: 'approved'
                 },
             });
-            const topic = await models.Topic.findOne({
-                where: {
-                    id: approvedTopic.topicId,
-                    semesterId: semester.id
-                },
-                include: [
-                    {
-                        model: models.Teacher,
-                        as: 'supervisor',
-                        attributes: ['id', 'fullName', 'email', 'phone'],
-                    }
-                ]
-            });
-            if (approvedTopic) return res.status(200).json({ message: "Applied topic fetched successfully", approvedTopic: { approvedTopic, topic } });
+            let topic = null;
+            if (approvedTopic) {
+                topic = await models.Topic.findOne({
+                    where: {
+                        id: approvedTopic.topicId,
+                        semesterId: semester.id
+                    },
+                    include: [
+                        {
+                            model: models.Teacher,
+                            as: 'supervisor',
+                            attributes: ['id', 'fullName', 'email', 'phone'],
+                        }
+                    ]
+                });
+                return res.status(200).json({ message: "Applied topic fetched successfully", approvedTopic: { approvedTopic, topic } });
+            }
             
             const appliedTopics = await models.PreThesisRegistration.findAll({
                 where: {
@@ -218,6 +232,41 @@ class StudentController {
             return res.status(200).json({ message: "Applied topic fetched successfully", appliedTopics });
         } catch (error) {
             console.error('Error fetching applied topic:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getPreThesis(req, res) {
+        const userId = req.user.id;
+        const preThesisId = req.params.preThesisId;
+        try {
+            const s = await share.getStudentById(userId);
+            if (!s) return res.status(404).json({ message: "Student not found" });
+            if (s.status !== 'active') return res.status(404).json({ message: "Student not active" });
+
+            const preThesis = await models.PreThesisRegistration.findOne({
+                where: {
+                    id: preThesisId,
+                },
+                include: [
+                    {
+                        model: models.Topic,
+                        as: 'topic',
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'supervisor',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ],
+                    }
+                ]
+            });
+            if (!preThesis) return res.status(404).json({ message: "No pre-thesis found" });
+
+            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis });
+        } catch (error) {
+            console.error('Error fetching pre-thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
@@ -255,7 +304,7 @@ class StudentController {
         }
     }
 
-    getThesisContact = async (req, res) => {
+    getThesisContacts = async (req, res) => {
         const userId = req.user.id;
         try {
             const semester = await models.Semester.findOne({
@@ -280,6 +329,41 @@ class StudentController {
             return res.status(200).json({ message: "Active semester fetched successfully", teacher });
         } catch (error) {
             console.error('Error fetching active semester:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getThesis(req, res) {
+        const userId = req.user.id;
+        const thesisId = req.params.thesisId;
+        try {
+            const s = await share.getStudentById(userId);
+            if (!s) return res.status(404).json({ message: "Student not found" });
+            if (s.status !== 'active') return res.status(404).json({ message: "Student not active" });
+
+            const thesis = await models.Thesis.findOne({
+                where: {
+                    id: thesisId
+                },
+                include: [
+                    {
+                        model: models.Topic,
+                        as: 'topic',
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'supervisor',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ],
+                    }
+                ]
+            });
+            if (!thesis) return res.status(404).json({ message: "No thesis found" });
+
+            return res.status(200).json({ message: "Thesis fetched successfully", thesis });
+        } catch (error) {
+            console.error('Error fetching thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
