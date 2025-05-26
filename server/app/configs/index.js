@@ -91,43 +91,6 @@ const seedDatabase = async () => {
       { userId: users[5].id, fullName: 'Moderator One', email: 'moderator1@example.com', phone: '1231231234' },
     ]);
 
-    // Insert Semesters
-    const semesters = await models.Semester.bulkCreate([
-      { name: 'Spring 2025', startDate: '2025-01-01', endDate: '2025-06-01', isCurrent: true },
-      { name: 'Fall 2025', startDate: '2025-08-01', endDate: '2025-12-31', isActive: true },
-    ]);
-
-    // Mod assigning semesters to teachers and students
-    const teacherSemesters = await models.TeacherSemester.bulkCreate([
-      { teacherId: teachers[0].id, semesterId: semesters[0].id, maxPreThesisSlots: 5, maxThesisSlots: 5, remainingPreThesisSlots: 0, remainingThesisSlots: 5 },
-      { teacherId: teachers[0].id, semesterId: semesters[1].id, maxPreThesisSlots: 10, maxThesisSlots: 10, remainingPreThesisSlots: 10, remainingThesisSlots: 10 },
-      { teacherId: teachers[1].id, semesterId: semesters[0].id, maxPreThesisSlots: 3, maxThesisSlots: 6, remainingPreThesisSlots: 0, remainingThesisSlots: 5 },
-      { teacherId: teachers[1].id, semesterId: semesters[1].id, maxPreThesisSlots: 10, maxThesisSlots: 10, remainingPreThesisSlots: 10, remainingThesisSlots: 10 },
-    ]);
-    const studentSemesters = await models.StudentSemester.bulkCreate([
-      // { studentId: students[0].id, semesterId: semesters[0].id, type: 'pre-thesis', isRegistered: true},
-      { studentId: students[0].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[1].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[2].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[3].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[4].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[5].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[6].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[7].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[8].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[9].id, semesterId: semesters[1].id, type: 'pre-thesis', isRegistered: false },
-      { studentId: students[10].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[11].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[12].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[13].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[14].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[15].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[16].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[17].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[18].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-      { studentId: students[19].id, semesterId: semesters[1].id, type: 'thesis', isRegistered: false },
-    ]);
-
     console.log('Database seeded successfully!');
   } catch (error) {
     console.error('Error seeding database:', error);

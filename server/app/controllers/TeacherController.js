@@ -1,5 +1,6 @@
 const { models, sequelize } = require('../models');
 const Semester = require('../models/Semester');
+const { createNotification } = require('../services/notificationService');
 const share = require('../utils/share');
 
 class TeacherController {
@@ -389,7 +390,6 @@ class TeacherController {
                 { status: 'approved' },
                 { where: { id: registrationId }, transaction }
             );
-            console.log('Updated registration:', updatedRegistration);
             const r = await models.PreThesisRegistration.findAll({
                 where: {
                     studentId: registration.studentId,
@@ -417,7 +417,12 @@ class TeacherController {
                 dueDate: semester.endDate,
             }, { transaction });
 
-            console.log('Updated registration:');
+            await createNotification({
+                recipientId: registration.studentId,
+                type: 'alert',
+                title: 'Pre-thesis Registration Accepted',
+                message: 'Your pre-thesis registration has been accepted.'
+            });
 
             await transaction.commit();
             return res.status(200).json({ message: "Pre-thesis registration accepted successfully" });
@@ -466,6 +471,13 @@ class TeacherController {
                 { status: 'rejected' },
                 { where: { id: registrationId }, transaction }
             );
+
+            await createNotification({
+                recipientId: registration.studentId,
+                type: 'alert',
+                title: 'Pre-thesis Registration Rejected',
+                message: 'Your pre-thesis registration has been rejected.'
+            });
 
             await transaction.commit();
             return res.status(200).json({ message: "Pre-thesis registration rejected successfully" });
@@ -593,7 +605,7 @@ class TeacherController {
                         model: models.Topic,
                         as: "preThesisTopic",
                         where: {
-                            teacherId: t.id,
+                            supervisorId: t.id,
                         },
                         attributes: ['id', 'topic', 'description'],
                     },
@@ -716,6 +728,13 @@ class TeacherController {
                 ]
             });
 
+            await createNotification({
+                recipientId: student.id,
+                type: 'alert',
+                title: 'Thesis Assigned',
+                message: `You have been assigned a new thesis: ${thesis.title}`
+            });
+
             await transaction.commit();
             return res.status(201).json({ message: "Thesis assigned successfully", thesisStudents });
         } catch (error) {
@@ -817,6 +836,13 @@ class TeacherController {
 
             await thesis.save();
 
+            await createNotification({
+                recipientId: thesis.studentId,
+                type: 'alert',
+                title: 'Thesis Update!',
+                message: 'Your Thesis has been updated by the supervisor'
+            })
+
             return res.status(200).json({ message: "Thesis updated successfully", thesis });
         } catch (error) {
             console.error('Error updating thesis:', error);
@@ -880,8 +906,6 @@ class TeacherController {
             const thesis = await models.Thesis.findOne({
                 where: {
                     id: thesisId,
-                    supervisorId: t.id,
-                    semesterId: semester.id
                 },
                 include: [
                     {

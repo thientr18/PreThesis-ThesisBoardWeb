@@ -16,47 +16,43 @@ export default function TopicList() {
     const [topic, setTopic] = useState(null);
 
     useEffect(() => {
-        const fetchApplied = async () => {
-            try {
-                const response = await api.get(`/student/applied-topic`);
-                if (response.data.appliedTopics) {
-                    setAppliedTopics(response.data.appliedTopics);
-                }
-                if (response.data.approvedTopic) {
-                    setApprovedTopic(response.data.approvedTopic.approvedTopic);
-                    setTopic(response.data.approvedTopic.topic);
-                }
-            } catch (error) {
-                if (error.response && error.response.status === 404) {
-                    setAppliedTopics([]);
-                    setApprovedTopic(null);
-                } else {
-                    console.error("Error fetching applied topic:", error);
-                }
-            } finally {
-                setTopicLoading(false);
-            }
-        }
-
         fetchApplied();
-    }, []);
-
-    useEffect(() => {
-        const fetchTopics = async () => {
-            try {
-                const response = await api.get('/student/topic-list');
-                setTopics(response.data.topics);
-                setSemester(response.data.semester);
-            } catch (error) {
-                console.error("Error fetching topics:", error);
-            } finally {
-                setTopicLoading(false);
-            }
-        };
-
         fetchTopics();
     }, []);
-
+    
+    const fetchApplied = async () => {
+        try {
+            const response = await api.get(`/student/applied-topic`);
+            if (response.data.appliedTopics) {
+                setAppliedTopics(response.data.appliedTopics);
+            }
+            if (response.data.approvedTopic) {
+                setApprovedTopic(response.data.approvedTopic.approvedTopic);
+                setTopic(response.data.approvedTopic.topic);
+            }
+        } catch (error) {
+            if (error.response && error.response.status === 404) {
+                setAppliedTopics([]);
+                setApprovedTopic(null);
+            } else {
+                console.error("Error fetching applied topic:", error);
+            }
+        } finally {
+            setTopicLoading(false);
+        }
+    }
+    const fetchTopics = async () => {
+        try {
+            const response = await api.get('/student/topic-list');
+            setTopics(response.data.topics);
+            setSemester(response.data.semester);
+        } catch (error) {
+            console.error("Error fetching topics:", error);
+        } finally {
+            setTopicLoading(false);
+        }
+    };
+    
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -66,7 +62,7 @@ export default function TopicList() {
             await api.post(`/student/apply-topic/${topic.id}`, { title, description });
             alert("Successfully applied for the topic!");
             const response = await api.get(`/student/applied-topic`);
-            setAppliedTopics(response.data.appliedTopics);
+            await fetchApplied();
             setOpenModal(false);
         } catch (error) {
             alert("Failed to apply for the topic.\n" + error.response.data.message);
@@ -215,7 +211,7 @@ export default function TopicList() {
                                 </tr>
                                 <tr>
                                     <td><strong>Supervisor Email:</strong></td>
-                                    <td>{selectedTopic.supervisor.email}</td>
+                                    <td style={{textTransform: "lowercase"}}>{selectedTopic.supervisor.email}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Status:</strong></td>

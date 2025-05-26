@@ -15,7 +15,7 @@ const PreThesisHome = () => {
             try {
                 const response = await api.get(`/teacher/pre-thesis/${preThesisId}`);
                 setPreThesis(response.data.preThesis);
-                setTopic(response.data.preThesis.topic);
+                setTopic(response.data.preThesis.preThesisTopic);
                 setStudent(response.data.preThesis.student);
                 console.log(response.data);
             } catch (error) {
@@ -39,12 +39,11 @@ const PreThesisHome = () => {
     return (
         <div className="dashboard-container">
             <h1>Pre-Thesis Overview</h1>
-            {/* Button pop-up features: grading,..  on the right  of h1*/}
-            <div className="thesis-info-stack">
+            <div className="prethesis-info-stack">
                 {/* Student Card */}
-                <div className="thesis-student-card">
-                    <h2 className="thesis-card-title">Student Info</h2>
-                    <table className="thesis-info-table">
+                <div className="prethesis-student-card">
+                    <h2 className="prethesis-card-title">Student Info</h2>
+                    <table className="prethesis-info-table">
                         <tbody>
                             <tr>
                                 <td className="label">Full Name:</td>
@@ -56,7 +55,7 @@ const PreThesisHome = () => {
                             </tr>
                             <tr>
                                 <td className="label">Email:</td>
-                                <td className="value">{student.email}</td>
+                                <td className="value" style={{textTransform: "lowercase"}}>{student.email}</td>
                             </tr>
                             <tr>
                                 <td className="label">Phone:</td>
@@ -75,9 +74,9 @@ const PreThesisHome = () => {
                 </div>
 
                 {/* Pre-Thesis Card */}
-                <div className="thesis-card">
-                    <h2 className="thesis-card-title">Pre-Thesis Info</h2>
-                    <table className="thesis-info-table">
+                <div className="prethesis-detail-card">
+                    <h2 className="prethesis-card-title">Pre-Thesis Info</h2>
+                    <table className="prethesis-info-table">
                         <tbody>
                             <tr>
                                 <td className="label">Title:</td>
@@ -91,12 +90,14 @@ const PreThesisHome = () => {
                                 <td className="label">Description:</td>
                                 <td className="value">{preThesis.description}</td>
                             </tr>
+                            <tr>
+                                <td className="label">Status:</td>
+                                <td className="value">{preThesis.status}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <h1>Notifications</h1>
         </div>
     )
 }

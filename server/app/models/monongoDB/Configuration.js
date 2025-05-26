@@ -1,16 +1,17 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const ConfigurationSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
-  value: { type: mongoose.Schema.Types.Mixed, required: true },
-  description: { type: String },
+  name: { type: String },
+  value: { type: String },
   scope: {
     type: String,
     enum: ['global', 'semester'],
     default: 'global'
   },
   semesterId: ({ type: Number, required: false }), // Only used if scope is 'semester'
+  createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.model('Configuration', ConfigurationSchema);
+module.exports = mongoose.model('Configuration', ConfigurationSchema);

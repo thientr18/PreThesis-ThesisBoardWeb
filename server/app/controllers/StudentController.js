@@ -2,6 +2,10 @@ const { models, sequelize } = require('../models');
 const share = require('../utils/share');
 const { Op } = require('sequelize');
 
+const { createNotification } = require('../services/notificationService');
+const Notification = require('../models/monongoDB/Notification');
+const { create } = require('../models/User');
+
 class StudentController {
     async getProfile(req, res) {
         const studentId = req.user.id;
@@ -94,8 +98,6 @@ class StudentController {
             if (!s) return res.status(404).json({ message: "Student not found" });
             if (s.status !== 'active') return res.status(404).json({ message: "Student not active" });
 
-            
-
             const semester = await models.Semester.findOne({
                 where: { isActive: true }
             });
@@ -161,6 +163,12 @@ class StudentController {
                 });
             }
 
+            const notiTeacher = await createNotification({
+                recipientId: topic.supervisorId,
+                type: 'alert',
+                title: 'Topic Application',
+                message: `You have recieved a new application for the topic ${topic.topic}`,
+            });
             return res.status(200).json({ message: "Applied for the topic successfully" });
         } catch (error) {
             console.error('Error applying for topic:', error);
@@ -238,20 +246,23 @@ class StudentController {
 
     async getPreThesis(req, res) {
         const userId = req.user.id;
-        const preThesisId = req.params.preThesisId;
+        const semesterId = req.params.semesterId;
         try {
             const s = await share.getStudentById(userId);
             if (!s) return res.status(404).json({ message: "Student not found" });
             if (s.status !== 'active') return res.status(404).json({ message: "Student not active" });
 
-            const preThesis = await models.PreThesisRegistration.findOne({
+            const preThesis = await models.PreThesis.findOne({
                 where: {
-                    id: preThesisId,
+                    studentId: s.id,
                 },
                 include: [
                     {
                         model: models.Topic,
-                        as: 'topic',
+                        as: 'preThesisTopic',
+                        where: {
+                            semesterId: semesterId,
+                        },
                         include: [
                             {
                                 model: models.Teacher,
@@ -335,7 +346,7 @@ class StudentController {
 
     async getThesis(req, res) {
         const userId = req.user.id;
-        const thesisId = req.params.thesisId;
+        const semesterId = req.params.semesterId;
         try {
             const s = await share.getStudentById(userId);
             if (!s) return res.status(404).json({ message: "Student not found" });
@@ -343,24 +354,24 @@ class StudentController {
 
             const thesis = await models.Thesis.findOne({
                 where: {
-                    id: thesisId
+                    studentId: s.id,
+                    semesterId: semesterId,
                 },
+                attributes: ['id', 'studentId', 'supervisorId', 'semesterId', 'title', 'description', 'report', 'presentation', 'demo', 'finalGrade', 'status'],
                 include: [
                     {
-                        model: models.Topic,
-                        as: 'topic',
-                        include: [
-                            {
-                                model: models.Teacher,
-                                as: 'supervisor',
-                                attributes: ['id', 'fullName', 'email', 'phone'],
-                            }
-                        ],
+                        model: models.Student,
+                        as: 'student',
+                        attributes: ['userId', 'fullName', 'email', 'phone'],
+                    },
+                    {
+                        model: models.Teacher,
+                        as: 'supervisor',
+                        attributes: ['userId', 'fullName', 'email', 'phone'],
                     }
                 ]
             });
             if (!thesis) return res.status(404).json({ message: "No thesis found" });
-
             return res.status(200).json({ message: "Thesis fetched successfully", thesis });
         } catch (error) {
             console.error('Error fetching thesis:', error);

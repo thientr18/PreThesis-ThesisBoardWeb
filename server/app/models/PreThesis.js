@@ -2,6 +2,7 @@ const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/userDB');
 const StudentSemester = require('./StudentSemester');
 const Topic = require('./Topic');
+const Student = require('./Student');
 
 class PreThesis extends Model {}
 PreThesis.init({
@@ -15,8 +16,8 @@ PreThesis.init({
         allowNull: false,
         primaryKey: true,
         references: {
-            model: StudentSemester,
-            key: 'studentId'
+            model: Student,
+            key: 'id'
         }
     },
     topicId: {

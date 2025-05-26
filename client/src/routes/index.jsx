@@ -1,14 +1,16 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+
+import ProtectedRoute from './ProtectedRoute';
+
 import Login from '@/pages/shared/Login';
 import Unauthorized from '@/pages/shared/Unauthorized';
+import Configuration from '@/pages/shared/Configuration';
 
 import AdminLayout from '@/layouts/AdminLayout';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import StudentConfig from '@/pages/admin/StudentConfig';
 import TeacherConfig from '@/pages/admin/TeacherConfig';
 import ModeratorConfig from '@/pages/admin/ModeratorConfig';
-import GlobalDashboard from '@/pages/admin/GlobalDashboard';
-import ProtectedRoute from './ProtectedRoute';
 
 import ModeratorLayout from '@/layouts/ModeratorLayout';
 import ModeratorDashboard from '@/pages/moderator/ModeratorDashboard';
@@ -28,7 +30,7 @@ import StudentDashboard from '@/pages/student/StudentDashboard';
 import TopicList from '@/pages/student/TopicList';
 import ThesisContact from '@/pages/student/ThesisContact';
 import PreThesisHomeStudent from '@/pages/student/PreThesisHome';
-import ThesisContactStudent from '@/pages/student/ThesisContact';
+import ThesisHomeStudent from '@/pages/student/ThesisHome';
 
 const AppRoutes = () => {
   return (
@@ -48,7 +50,7 @@ const AppRoutes = () => {
                 <Route path='/student/config' element={<StudentConfig />} />
                 <Route path="/teacher/config" element={<TeacherConfig />} />
                 <Route path="/moderator/config" element={<ModeratorConfig />} />
-                <Route path="/global/dashboard" element={<GlobalDashboard />} />
+                <Route path="/system-settings" element={<Configuration />} />
                 {/* Add more admin routes here */}
               </Routes>
             </AdminLayout>
@@ -99,9 +101,8 @@ const AppRoutes = () => {
                 <Route path="/" element={<StudentDashboard />} />
                 <Route path="/topic-list" element={<TopicList />} />
                 <Route path="/contact-supervisor" element={<ThesisContact />} />
-                <Route path="/pre-thesis/:preThesisId" element={<PreThesisHomeStudent />} />
-                <Route path="/thesis/:thesisId" element={<ThesisContactStudent />} />
-                
+                <Route path="/pre-thesis/:semesterId" element={<PreThesisHomeStudent />} />
+                <Route path="/thesis/:semesterId" element={<ThesisHomeStudent />} />
                 {/* Add more student routes here */}
               </Routes>
             </StudentLayout>

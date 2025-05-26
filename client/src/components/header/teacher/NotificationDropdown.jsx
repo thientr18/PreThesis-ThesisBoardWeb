@@ -1,39 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/utils/axios";
-import socket from "@/utils/socket";
 
-export default function NotificationDropdown() {
-    const [notifications, setNotifications] = useState([]);
+export default function NotificationDropdown({ notifications = [], setNotifications, setUnreadCount }) {
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const response = await api.get('/teacher/notifications');
-                const data = Array.isArray(response.data.notifications)
-                    ? response.data.notifications
-                    : [];
-                setNotifications(data);
-            } catch (error) {
-                console.error('Error fetching notifications:', error);
-                setNotifications([]);
-            }
-        };
-        fetchNotifications();
-
-        const handleNotification = (newNotification) => {
-            setNotifications((prevNotifications) => [newNotification, ...prevNotifications]);
-        };
-
-        socket.on('notification', handleNotification);
-
-        return () => {
-            socket.off('notification', handleNotification);
-        };
-    }, []);
-
-    const handleClick = (id) => {
+    const handleClick = async (id) => {
+        try {
+            await api.patch(`/teacher/notifications/${id}/read`);
+            const updated = notifications.map(n =>
+                n._id === id ? { ...n, isRead: true } : n
+            );
+            setNotifications(updated);
+            setUnreadCount(updated.filter(n => !n.isRead).length);
+        } catch (error) {
+            console.log(error);
+        }
         navigate(`/teacher/notifications/${id}`);
     };
 
@@ -44,19 +26,23 @@ export default function NotificationDropdown() {
             ) : (
                 notifications.map((notification) => (
                     <div
-                        key={notification.id}
-                        className="notification-item"
-                        onClick={() => handleClick(notification.id)}
+                        key={notification._id}
+                        className={`notification-item${notification.isRead ? '' : ' unread'}`}
+                        onClick={() => handleClick(notification._id)}
                     >
                         <div className="notification-title">
-                        {notification?.title || "No Title"}
+                            {notification.title 
+                                ? (notification.title.length > 60
+                                    ? notification.title.slice(0, 60) + "..."
+                                    : notification.title)
+                                : "No Title"}
                         </div>
                         <div className="notification-snippet">
-                        {notification?.content
-                            ? (notification.content.length > 60
-                                ? notification.content.slice(0, 60) + "..."
-                                : notification.content)
-                            : "No Content"}
+                            {notification.message
+                                ? (notification.message.length > 60
+                                    ? notification.message.slice(0, 60) + "..."
+                                    : notification.message)
+                                : "No Content"}
                         </div>
                     </div>
                 ))

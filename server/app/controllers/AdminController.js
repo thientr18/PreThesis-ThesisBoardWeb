@@ -99,11 +99,15 @@ class AdminController {
             const totalStudents = await models.StudentSemester.count({ where: { semesterId } });
             const totalTeachers = await models.Teacher.count({ where: { status: "active" } });
             const totalPreThesis = await models.PreThesis.count({
-                // count preThesis by semeseterId
+                include: {
+                    model: models.Topic,
+                    as: 'preThesisTopic',
+                    where: { semesterId }
+                }
             });
             const totalThesis = await models.Thesis.count({ where: { semesterId } });
 
-            res.status(200).json({ semester, totalStudents, totalTeachers, totalPreThesis, totalThesis, });
+            res.status(200).json({ semester, totalStudents, totalTeachers, totalPreThesis, totalThesis });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: "Internal Server Error" });
@@ -139,6 +143,8 @@ class AdminController {
             });
             if (!semesters) return res.status(404).json({ message: "Semester not found" });
 
+            
+            
             res.status(200).json(semesters);
         } catch (error) {
             console.error(error);

@@ -53,7 +53,7 @@ const ThesisHome = () => {
                             </tr>
                             <tr>
                                 <td className="label">Email:</td>
-                                <td className="value">{student.email}</td>
+                                <td className="value" style={{textTransform: "lowercase"}}>{student.email}</td>
                             </tr>
                             <tr>
                                 <td className="label">Phone:</td>
@@ -95,6 +95,10 @@ const ThesisHome = () => {
                                 </td>
                             </tr>
                             <tr>
+                                <td className="label">Status:</td>
+                                <td className="value">{thesis.status}</td>
+                            </tr>
+                            <tr>
                                 <td className="label">Created:</td>
                                 <td className="value">{new Date(thesis.createdAt).toLocaleString()}</td>
                             </tr>
@@ -102,8 +106,6 @@ const ThesisHome = () => {
                     </table>
                 </div>
             </div>
-
-            <h1>Notifications</h1>
         </div>
     );
 };

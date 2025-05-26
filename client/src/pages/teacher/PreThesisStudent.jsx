@@ -67,7 +67,7 @@ const PreThesisStudent = () => {
                         <tbody>
                             {preThesisStudents.map((s) => (
                                 <tr key={s.id}>
-                                    <td><a href={`/teacher/prethesis/${s.id}`}>[{s.student.user.username}][{s.student.fullName}][{s.preThesisTopic.topic}]</a></td>
+                                    <td><a href={`/teacher/pre-thesis/${s.id}`}>[{s.student.user.username}][{s.student.fullName}][{s.preThesisTopic.topic}]</a></td>
                                     <td>
                                         <button onClick={() => {
                                                 handleDeletePreThesis(s.id);

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const AnnouncementSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -14,4 +14,4 @@ const AnnouncementSchema = new mongoose.Schema({
   expiresAt: { type: Date }
 });
 
-export default mongoose.model('Announcement', AnnouncementSchema);
+module.exports = AnnouncementSchema;

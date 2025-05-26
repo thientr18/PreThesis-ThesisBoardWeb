@@ -65,6 +65,10 @@ Semester.init({
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    allowView: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    }
 }, {
     sequelize,
     modelName: 'Semester',

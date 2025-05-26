@@ -34,7 +34,6 @@ Grade.init({
             model: Teacher,
             key: 'id'
         },
-        allowNull: false
     },
     phase: {
         type: DataTypes.ENUM('pre-thesis', 'thesis'),
@@ -57,17 +56,17 @@ Grade.init({
         allowNull: true
     },
     status: {
-        type: DataTypes.ENUM('waiting', 'approved', 'rejected'),
+        type: DataTypes.ENUM('waiting', 'graded'),
         allowNull: false,
         defaultValue: 'waiting',
         validate: {
             isIn: {
-                args: [['waiting', 'approved', 'rejected']],
-                msg: "Status must be one of 'waiting', 'approved', or 'rejected'"
+                args: [['waiting', 'graded']],
+                msg: "Status must be one of 'waiting' or 'graded'"
             }
         }
     },
-    isFinal: {
+    isOverall: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
@@ -80,7 +79,6 @@ Grade.init({
     indexes: [
         {
             unique: true,
-            fields: ['thesisId', 'teacherId'],
             fields: ['preThesisId', 'teacherId']
         }
     ]

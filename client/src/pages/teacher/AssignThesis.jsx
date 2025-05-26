@@ -161,7 +161,7 @@ const AssignThesis = () => {
                                 </tr>
                                 <tr>
                                     <td>Email:</td>
-                                    <td>{selectedStudent?.student.email}</td>
+                                    <td style={{textTransform: "lowercase"}}>{selectedStudent?.student.email}</td>
                                 </tr>
                                 <tr>
                                     <td>Phone:</td>

@@ -21,12 +21,7 @@ const AdminDashboard = () => {
           return;
         }
 
-        const response = await api.get("/admin/home", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        });
+        const response = await api.get("/admin/home");
         
         if (response.status === 200) {
           const { semester, totalStudents, totalTeachers, totalPreThesis, totalThesis } = response.data;

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const TeacherController = require("../app/controllers/TeacherController");
+const NotificationController = require("../app/controllers/NotificationController");
+
+router.get('/notifications', NotificationController.getNotifications);
+router.patch('/notifications/:id/read', NotificationController.readNotifications);
 
 router.get('/profile/', TeacherController.getProfile);
 
@@ -13,6 +17,7 @@ router.post('/pre-thesis/registration/:registrationId/reject', TeacherController
 router.get('/pre-thesis/registration', TeacherController.getPreThesisRegistration);
 router.delete('/pre-thesis/assigned/:studentId/delete', TeacherController.deletePreThesis);
 router.get('/pre-thesis/assigned', TeacherController.getPreThesisStudents);
+router.get('/pre-thesis/:preThesisId', TeacherController.getPreThesis);
 
 // only moderator can assign pre-thesis
 router.post('/thesis/assigned/:studentId/new', TeacherController.assignThesis);

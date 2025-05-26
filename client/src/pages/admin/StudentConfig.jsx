@@ -149,10 +149,10 @@ export default function StudentConfig() {
             <h1>Student Config</h1>
             {/* Modal Form */}
             {showForm && (
-                <div className="modal-overlay">
-                    <div className="modal-form">
+                <div className="modal-overlay" onClick={() => setShowForm(false)}>
+                    <div className="modal-form" onClick={(e) => e.stopPropagation()}>
                         <h2>{formMode === 'add' ? 'Add Student' : 'Edit Student'}</h2>
-                        <table>
+                        <table className="table">
                             <tbody>
                                 <tr>
                                     <td>Student ID: <span className="required">*</span></td>

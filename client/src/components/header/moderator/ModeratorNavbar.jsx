@@ -5,9 +5,27 @@ import NotificationDropdown from "./NotificationDropdown";
 export default function ModeratorNavbar({ toggleSidebar }) {
     const [showAccountDropdown, setShowAccountDropdown] = useState(false);
     const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notifications, setNotifications] = useState([]);
 
     const accountRef = useRef(null);
     const notificationRef = useRef(null);
+
+    // Fetch notifications on mount
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const response = await api.get('/moderator/notifications');
+                setNotifications(response.data);
+                const unread = response.data.filter(n => !n.isRead).length;
+                setUnreadCount(unread);
+            } catch (error) {
+                setNotifications([]);
+                setUnreadCount(0);
+            }
+        };
+        fetchNotifications();
+    }, []);
 
     const toggleAccountDropdown = () => {
         setShowAccountDropdown(prev => !prev);
@@ -18,6 +36,12 @@ export default function ModeratorNavbar({ toggleSidebar }) {
         setShowNotificationDropdown(prev => !prev);
         setShowAccountDropdown(false); // close other dropdown
     };
+
+    const sortedNotifications = [...notifications].sort((a, b) => {
+        if (a.isRead === b.isRead) return 0;
+        return a.isRead ? 1 : -1;
+    });
+
     
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -60,8 +84,30 @@ export default function ModeratorNavbar({ toggleSidebar }) {
                 src="/ring.svg"
                 onClick={toggleNotificationDropdown}
             />
-            {showNotificationDropdown && (
-                <NotificationDropdown />
+            {unreadCount > 0 && (
+                <span
+                    style={{
+                        position: "absolute",
+                        top: 2,
+                        right: 2,
+                        background: "red",
+                        color: "white",
+                        borderRadius: "50%",
+                        padding: "2px 7px",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        zIndex: 1
+                    }}
+                >
+                    {unreadCount}
+                </span>
+                )}
+                {showNotificationDropdown && (
+                <NotificationDropdown 
+                    notifications = {sortedNotifications}
+                    setNotifications={setNotifications}
+                    setUnreadCount={setUnreadCount}     
+                />
             )}
             </div>
 

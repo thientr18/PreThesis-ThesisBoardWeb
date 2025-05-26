@@ -29,7 +29,7 @@ export default function StudentSidebar() {
                     </a>
                   )}
                   {(sem.isRegistered && sem.type === 'pre-thesis') && (
-                    <a href="/pre-thesis">
+                    <a href={`/pre-thesis/${sem.semesterId}`}>
                       <button className="sidebar-btn">
                         <img src="/student-icon.svg" alt="student icon" className="icon" />
                         <span>Your Pre-Thesis</span>
@@ -45,7 +45,7 @@ export default function StudentSidebar() {
                     </a>
                   )}
                   {(sem.isRegistered && sem.type === 'thesis') && (
-                    <a href="/thesis">
+                    <a href={`/thesis/${sem.semesterId}`}>
                       <button className="sidebar-btn">
                         <img src="/student-icon.svg" alt="student icon" className="icon" />
                         <span>Your Thesis</span>

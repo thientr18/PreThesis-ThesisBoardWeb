@@ -2,24 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/utils/axios";
 
-export default function NotificationDropdown() {
-    const [notifications, setNotifications] = useState([]);
+export default function NotificationDropdown({ notifications = [], setNotifications, setUnreadCount }) {
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                const response = await api.get('/admin/notifications');
-                setNotifications(response.data.notifications);
-            } catch (error) {
-                setNotifications([]);
-                console.error('Error fetching notifications:', error);
-            }
-        };
-        fetchNotifications();
-    }, []);
-
-    const handleClick = (id) => {
+    const handleClick = async (id) => {
+        try {
+            await api.patch(`/admin/notifications/${id}/read`);
+            const updated = notifications.map(n =>
+                n._id === id ? { ...n, isRead: true } : n
+            );
+            setNotifications(updated);
+            setUnreadCount(updated.filter(n => !n.isRead).length);
+        } catch (error) {
+            console.log(error);
+        }
         navigate(`/admin/notifications/${id}`);
     };
 
@@ -30,19 +26,23 @@ export default function NotificationDropdown() {
             ) : (
                 notifications.map((notification) => (
                     <div
-                        key={notification.id}
-                        className="notification-item"
-                        onClick={() => handleClick(notification.id)}
+                        key={notification._id}
+                        className={`notification-item${notification.isRead ? '' : ' unread'}`}
+                        onClick={() => handleClick(notification._id)}
                     >
                         <div className="notification-title">
-                        {notification.title || "No Title"}
+                            {notification.title 
+                                ? (notification.title.length > 60
+                                    ? notification.title.slice(0, 60) + "..."
+                                    : notification.title)
+                                : "No Title"}
                         </div>
                         <div className="notification-snippet">
-                        {notification.content
-                            ? (notification.content.length > 60
-                                ? notification.content.slice(0, 60) + "..."
-                                : notification.content)
-                            : "No Content"}
+                            {notification.message
+                                ? (notification.message.length > 60
+                                    ? notification.message.slice(0, 60) + "..."
+                                    : notification.message)
+                                : "No Content"}
                         </div>
                     </div>
                 ))
