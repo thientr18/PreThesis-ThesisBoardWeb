@@ -1,7 +1,6 @@
 const Configuration = require('../models/monongoDB/Configuration');
 const { models } = require('../models');
-// Add this import to get direct access to sequelize
-const sequelize = require('../configs/userDB'); // Import sequelize directly
+const sequelize = require('../configs/userDB');
 
 class ConfigurationController {
     async getConfigurationsBySemester(req, res) {
@@ -33,8 +32,6 @@ class ConfigurationController {
         try {
             const semester = await models.Semester.create({
                 name,
-                startDate: new Date(startDate),
-                endDate: new Date(endDate),
                 isCurrent: false,
                 isActive: false,
                 allowView: false,
@@ -251,17 +248,17 @@ class ConfigurationController {
             const bulkOps = configurations.map(config => ({
                 updateOne: {
                     filter: { 
-                        key: config.key, // Use the key directly since it already includes semesterId
+                        key: config.key,
                         semesterId: parseInt(semesterId),
                         scope: 'semester'
                     },
                     update: { 
                         $set: { 
                             name: config.name,
-                            value: config.value,
+                            value: config.value, // Store as-is
                             scope: 'semester',
                             semesterId: parseInt(semesterId),
-                            key: config.key // Ensure key is also updated
+                            key: config.key
                         } 
                     },
                     upsert: true

@@ -443,6 +443,257 @@ class AdminController {
             res.status(500).json({ message: "Internal Server Error" });
         }
     }
+
+    // Route: /admin/semesters/:semesterId/teachers
+    async getTeachersBySemester(req, res) {
+        const { semesterId } = req.params;
+        
+        try {
+            // Assuming you have a TeacherSemester or similar junction table
+            // Adjust the model names based on your actual database structure
+            const assignments = await models.TeacherSemester.findAll({
+                where: { semesterId },
+                include: [{
+                    model: models.Teacher,
+                    as: 'teacher',
+                    attributes: ['id', 'fullName', 'email', 'status'],
+                    include: [{
+                        model: models.User,
+                        as: 'user',
+                        attributes: ['username']
+                    }]
+                }],
+                attributes: [
+                    'teacherId',
+                    'semesterId',
+                    'maxPreThesisSlots',
+                    'remainingPreThesisSlots',
+                    'maxThesisSlots',
+                    'remainingThesisSlots'
+                ]
+            });
+
+            const teachers = assignments.map(assignment => ({
+                id: assignment.teacher.id,
+                fullName: assignment.teacher.fullName,
+                name: assignment.teacher.fullName, // Add this for compatibility
+                email: assignment.teacher.email,
+                username: assignment.teacher.user?.username,
+                department: assignment.teacher.department || 'N/A',
+                status: assignment.teacher.status,
+                // Include the TeacherSemester data with slot information
+                TeacherSemester: {
+                    maxPreThesisSlots: assignment.maxPreThesisSlots,
+                    remainingPreThesisSlots: assignment.remainingPreThesisSlots,
+                    maxThesisSlots: assignment.maxThesisSlots,
+                    remainingThesisSlots: assignment.remainingThesisSlots,
+                    assignedAt: assignment.assignedAt
+                }
+            }));
+            
+            res.status(200).json(teachers);
+        } catch (error) {
+            console.error('Error fetching teachers by semester:', error);
+            res.status(500).json({ error: 'Failed to fetch teachers' });
+        }
+    }
+
+    // Route: /admin/semesters/:semesterId/teachers/assign
+    async assignTeacherToSemester(req, res) {
+        const t = await sequelize.transaction();
+        const { semesterId } = req.params;
+        const { teacherId } = req.body;
+        
+        try {
+            // Check if assignment already exists
+            const existingAssignment = await models.TeacherSemester.findOne({
+                where: { teacherId, semesterId }
+            });
+            
+            if (existingAssignment) {
+                await t.rollback();
+                return res.status(400).json({ error: 'Teacher is already assigned to this semester' });
+            }
+            
+            // Verify teacher exists
+            const teacher = await models.Teacher.findByPk(teacherId);
+            if (!teacher) {
+                await t.rollback();
+                return res.status(404).json({ error: 'Teacher not found' });
+            }
+
+            // Verify semester exists
+            const semester = await models.Semester.findByPk(semesterId);
+            if (!semester) {
+                await t.rollback();
+                return res.status(404).json({ error: 'Semester not found' });
+            }
+            
+            const assignment = await models.TeacherSemester.create({
+                teacherId,
+                semesterId,
+                assignedBy: req.user.id,
+                assignedAt: new Date()
+            }, { transaction: t });
+            
+            await t.commit();
+            res.status(201).json({ message: 'Teacher assigned successfully', assignment });
+        } catch (error) {
+            await t.rollback();
+            console.error('Error assigning teacher to semester:', error);
+            res.status(500).json({ error: 'Failed to assign teacher' });
+        }
+    }
+
+    // Route: /admin/semesters/:semesterId/teachers/assign-multiple
+    async assignMultipleTeachersToSemester(req, res) {
+        const t = await sequelize.transaction();
+        const { semesterId } = req.params;
+        const { teacherIds, maxPreThesisSlots, maxThesisSlots } = req.body;
+        try {
+            if (!Array.isArray(teacherIds) || teacherIds.length === 0) {
+                await t.rollback();
+                return res.status(400).json({ error: 'Teacher IDs array is required' });
+            }
+
+            // Get existing assignments to avoid duplicates
+            const existingAssignments = await models.TeacherSemester.findAll({
+                where: { 
+                    semesterId,
+                    teacherId: teacherIds
+                },
+                attributes: ['teacherId']
+            });
+
+            const existingTeacherIds = existingAssignments.map(a => a.teacherId);
+            const newTeacherIds = teacherIds.filter(id => !existingTeacherIds.includes(id));
+
+            if (newTeacherIds.length === 0) {
+                await t.rollback();
+                return res.status(400).json({ error: 'All teachers are already assigned to this semester' });
+            }
+
+            const assignments = newTeacherIds.map(teacherId => ({
+                teacherId,
+                semesterId,
+                maxPreThesisSlots: maxPreThesisSlots || 0,
+                remainingPreThesisSlots: maxPreThesisSlots || 0,
+                maxThesisSlots: maxThesisSlots || 0,
+                remainingThesisSlots: maxThesisSlots || 0,
+                assignedBy: req.user.id,
+                assignedAt: new Date()
+            }));
+            
+            await models.TeacherSemester.bulkCreate(assignments, { transaction: t });
+            
+            await t.commit();
+            res.status(201).json({ 
+                message: `${newTeacherIds.length} teachers assigned successfully`,
+                assignedCount: newTeacherIds.length,
+                skippedCount: existingTeacherIds.length,
+            });
+        } catch (error) {
+            await t.rollback();
+            console.error('Error assigning multiple teachers:', error);
+            res.status(500).json({ error: 'Failed to assign teachers' });
+        }
+    }
+    async updateTeacherSlots(req, res) {
+        const t = await sequelize.transaction();
+        const { semesterId, teacherId } = req.params;
+        const { maxPreThesisSlots, maxThesisSlots } = req.body;
+        
+        try {
+            // Find the TeacherSemester assignment
+            const assignment = await models.TeacherSemester.findOne({
+                where: { teacherId, semesterId }
+            });
+            
+            if (!assignment) {
+                await t.rollback();
+                return res.status(404).json({ error: 'Teacher assignment not found' });
+            }
+            
+            // Update the slot values
+            const updateData = {};
+            
+            // Update pre-thesis slots
+            if (maxPreThesisSlots !== undefined) {
+                const currentMax = assignment.maxPreThesisSlots || 0;
+                const currentRemaining = assignment.remainingPreThesisSlots || 0;
+                const usedSlots = currentMax - currentRemaining;
+                
+                // Ensure new max is not less than used slots
+                if (maxPreThesisSlots < usedSlots) {
+                    await t.rollback();
+                    return res.status(400).json({ 
+                        error: `Cannot reduce max pre-thesis slots below ${usedSlots}. Currently ${usedSlots} slots are in use.` 
+                    });
+                }
+                
+                updateData.maxPreThesisSlots = maxPreThesisSlots;
+                updateData.remainingPreThesisSlots = maxPreThesisSlots - usedSlots;
+            }
+            
+            // Update thesis slots
+            if (maxThesisSlots !== undefined) {
+                const currentMax = assignment.maxThesisSlots || 0;
+                const currentRemaining = assignment.remainingThesisSlots || 0;
+                const usedSlots = currentMax - currentRemaining;
+                
+                // Ensure new max is not less than used slots
+                if (maxThesisSlots < usedSlots) {
+                    await t.rollback();
+                    return res.status(400).json({ 
+                        error: `Cannot reduce max thesis slots below ${usedSlots}. Currently ${usedSlots} slots are in use.` 
+                    });
+                }
+                
+                updateData.maxThesisSlots = maxThesisSlots;
+                updateData.remainingThesisSlots = maxThesisSlots - usedSlots;
+            }
+            
+            await models.TeacherSemester.update(updateData, {
+                where: { teacherId, semesterId },
+                transaction: t
+            });
+            
+            await t.commit();
+            res.status(200).json({ 
+                message: 'Teacher slots updated successfully',
+                slots: updateData
+            });
+        } catch (error) {
+            await t.rollback();
+            console.error('Error updating teacher slots:', error);
+            res.status(500).json({ error: 'Failed to update teacher slots' });
+        }
+    }
+
+    // Route: /admin/semesters/:semesterId/teachers/:teacherId/unassign
+    async unassignTeacherFromSemester(req, res) {
+        const t = await sequelize.transaction();
+        const { semesterId, teacherId } = req.params;
+        
+        try {
+            const deleted = await models.TeacherSemester.destroy({
+                where: { teacherId, semesterId },
+                transaction: t
+            });
+            
+            if (deleted === 0) {
+                await t.rollback();
+                return res.status(404).json({ error: 'Assignment not found' });
+            }
+            
+            await t.commit();
+            res.status(200).json({ message: 'Teacher unassigned successfully' });
+        } catch (error) {
+            await t.rollback();
+            console.error('Error unassigning teacher:', error);
+            res.status(500).json({ error: 'Failed to unassign teacher' });
+        }
+    }
 }
 
 module.exports = new AdminController();

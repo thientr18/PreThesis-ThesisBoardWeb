@@ -11,6 +11,7 @@ import AdminDashboard from '@/pages/admin/AdminDashboard';
 import StudentConfig from '@/pages/admin/StudentConfig';
 import TeacherConfig from '@/pages/admin/TeacherConfig';
 import ModeratorConfig from '@/pages/admin/ModeratorConfig';
+import SemesterAssignment from '@/pages/admin/SemesterAssignment';
 
 import ModeratorLayout from '@/layouts/ModeratorLayout';
 import ModeratorDashboard from '@/pages/moderator/ModeratorDashboard';
@@ -49,8 +50,9 @@ const AppRoutes = () => {
                 {/* <Route path="/student/dashboard" element={<StudentDashboard />} /> */}
                 <Route path='/student/config' element={<StudentConfig />} />
                 <Route path="/teacher/config" element={<TeacherConfig />} />
+                <Route path="/teacher/semester-assignment" element={<SemesterAssignment />} />
                 <Route path="/moderator/config" element={<ModeratorConfig />} />
-                <Route path="/system-settings" element={<Configuration />} />
+                <Route path="/configurations" element={<Configuration />} />
                 {/* Add more admin routes here */}
               </Routes>
             </AdminLayout>
@@ -82,10 +84,10 @@ const AppRoutes = () => {
                 <Route path="/pre-thesis/topic" element={<TeacherTopic />} />
                 <Route path="/pre-thesis/registration" element={<Registration />} />
                 <Route path="/thesis/assign-student" element={<AssignThesis />} />
-                <Route path="/pre-thesis/:preThesisId" element={<PreThesisHome />} />
                 <Route path="/pre-thesis/student" element={<PreThesisStudent />} />
-                <Route path="/thesis/:thesisId" element={<ThesisHome />} />
+                <Route path="/pre-thesis/:preThesisId" element={<PreThesisHome />} />
                 <Route path="/thesis/student/" element={<ThesisStudent />} />
+                <Route path="/thesis/:thesisId" element={<ThesisHome />} />
                 {/* Add more teacher routes here */}
               </Routes>
             </TeacherLayout>

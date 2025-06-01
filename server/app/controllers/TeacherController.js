@@ -1,5 +1,6 @@
 const { models, sequelize } = require('../models');
 const Semester = require('../models/Semester');
+const Configuration = require('../models/monongoDB/Configuration');
 const { createNotification } = require('../services/notificationService');
 const share = require('../utils/share');
 
@@ -22,7 +23,7 @@ class TeacherController {
             let enrolled = [];
 
             if ( activeSemester.id === currentSemester.id ) {
-                enrolled = currentSemester
+                enrolled = [currentSemester]
             } else {
                 enrolled = [activeSemester, currentSemester]
             }
@@ -36,7 +37,7 @@ class TeacherController {
                     {
                         model: Semester,
                         as: 'semester',
-                        attributes: ['name', 'startDate', 'endDate', 'isCurrent', 'isActive'],
+                        attributes: ['name', 'isCurrent', 'isActive'],
                     }
                 ],
                 attributes: ['teacherId', 'semesterId']
@@ -240,10 +241,12 @@ class TeacherController {
                 where: { userId: userId }
             });
             if (!t) return res.status(404).json({ message: "Teacher not found" });
+            
             const semester = await models.Semester.findOne({
                 where: { isActive: true }
             });
             if (!semester) return res.status(404).json({ message: "Active semester not found" });
+            
             const teacher = await models.TeacherSemester.findOne({
                 where: {
                     teacherId: t.id,
@@ -414,14 +417,13 @@ class TeacherController {
                 title: registration.title,
                 description: registration.description,
                 status: 'pending',
-                dueDate: semester.endDate,
             }, { transaction });
 
             await createNotification({
-                recipientId: registration.studentId,
+                recipientId: s.userId,
                 type: 'alert',
                 title: 'Pre-thesis Registration Accepted',
-                message: 'Your pre-thesis registration has been accepted.'
+                message: `Your pre-thesis registration has been accepted: ${topic.topic}`
             });
 
             await transaction.commit();
@@ -467,16 +469,22 @@ class TeacherController {
                 return res.status(404).json({ message: "Pre-thesis registration not found" });
             }
 
+            const s = await models.Student.findOne({
+                where: {
+                    id: registration.studentId,
+                }
+            });
+
             await models.PreThesisRegistration.update(
                 { status: 'rejected' },
                 { where: { id: registrationId }, transaction }
             );
 
             await createNotification({
-                recipientId: registration.studentId,
+                recipientId: s.userId,
                 type: 'alert',
                 title: 'Pre-thesis Registration Rejected',
-                message: 'Your pre-thesis registration has been rejected.'
+                message: `Your pre-thesis registration has been rejected: ${topic.topic}`
             });
 
             await transaction.commit();
@@ -496,6 +504,7 @@ class TeacherController {
             });
             if (!t) return res.status(404).json({ message: "Teacher not found" });
             if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+            
             const semester = await models.Semester.findOne({
                 where: { isActive: true }
             });
@@ -591,6 +600,7 @@ class TeacherController {
             });
             if (!t) return res.status(404).json({ message: "Teacher not found" });
             if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+            
             const semester = await models.Semester.findOne({
                 where: { isActive: true }
             });
@@ -613,22 +623,279 @@ class TeacherController {
                         model: models.Student,
                         as: 'student',
                         attributes: ['id', 'fullName', 'email', 'phone', 'gpa', 'credits'],
+                    },
+                    {
+                        model: models.PreThesisSubmission,
+                        as: 'submissions',
+                        required: false,
+                        order: [['submittedAt', 'DESC']],
                     }
                 ],
-                attributes: ['id', 'studentId', 'topicId', 'title', 'description', 'report', 'demo', 'grade', 'dueDate', 'status'],
+                attributes: ['id', 'studentId', 'topicId', 'title', 'description', 'videoUrl', 'status'],
             });
 
             if (!preThesis) {
                 return res.status(404).json({ message: "Pre-thesis not found" });
             }
 
-            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis });
+            // Process submissions similar to StudentController
+            const submissions = preThesis.submissions || [];
+            const reportSubmissions = submissions.filter(sub => sub.type === 'report');
+            const projectSubmissions = submissions.filter(sub => sub.type === 'project');
+
+            const latestReportSubmission = reportSubmissions.length > 0 
+                ? reportSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+            const latestProjectSubmission = projectSubmissions.length > 0 
+                ? projectSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+
+            const preThesisWithSubmissions = {
+                ...preThesis.toJSON(),
+                report: latestReportSubmission ? latestReportSubmission.fileUrl : null,
+                project: latestProjectSubmission ? latestProjectSubmission.fileUrl : null,
+                reportSubmittedAt: latestReportSubmission ? latestReportSubmission.submittedAt : null,
+                projectSubmittedAt: latestProjectSubmission ? latestProjectSubmission.submittedAt : null,
+                reportSubmissionCount: reportSubmissions.length,
+                projectSubmissionCount: projectSubmissions.length
+            };
+
+            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis: preThesisWithSubmissions });
         } catch (error) {
             console.error('Error fetching pre-thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
 
+    async gradePreThesis(req, res) {
+        const transaction = await sequelize.transaction();
+        const userId = req.user.id;
+        const preThesisId = req.params.preThesisId;
+        const { grade, comment } = req.body;
+
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+            if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+
+            // Validate grade
+            if (grade === undefined || grade === null) {
+                return res.status(400).json({ message: 'Grade is required' });
+            }
+            if (grade < 0 || grade > 100) {
+                return res.status(400).json({ message: 'Grade must be between 0 and 100' });
+            }
+
+            // Find pre-thesis and verify supervisor access (without semester join)
+            const preThesis = await models.PreThesis.findOne({
+                where: {
+                    id: preThesisId,
+                },
+                include: [
+                    {
+                        model: models.Topic,
+                        as: 'preThesisTopic',
+                        where: {
+                            supervisorId: t.id
+                        },
+                        attributes: ['id', 'topic', 'description', 'semesterId']
+                    }
+                ]
+            });
+
+            if (!preThesis) {
+                return res.status(404).json({ message: "Pre-thesis not found or access denied" });
+            }
+
+            // Get semester information from MySQL
+            const semester = await models.Semester.findByPk(preThesis.preThesisTopic.semesterId, {
+                attributes: ['id', 'name']
+            });
+
+            if (!semester) {
+                return res.status(404).json({ message: "Semester not found" });
+            }
+
+            // Get semester end date from MongoDB configuration
+            const endDateConfig = await Configuration.findOne({
+                key: `end_date_${semester.id}`,
+                semesterId: semester.id,
+                scope: 'semester'
+            });
+
+            console.log('End date config:', endDateConfig);
+
+            if (!endDateConfig || !endDateConfig.value) {
+                return res.status(400).json({ 
+                    message: "Semester end date not configured. Please contact administrator." 
+                });
+            }
+
+            // Check if semester end date has passed
+            const currentDate = new Date();
+            const semesterEndDate = new Date(endDateConfig.value);
+            
+            if (currentDate > semesterEndDate) {
+                return res.status(400).json({ 
+                    message: `Grading period has ended. Semester "${semester.name}" ended on ${semesterEndDate.toDateString()}` 
+                });
+            }
+
+            // Check if grade already exists
+            const existingGrade = await models.PreThesisGrade.findOne({
+                where: {
+                    preThesisId: preThesis.id,
+                    teacherId: t.id
+                }
+            });
+
+            if (existingGrade) {
+                // Update existing grade
+                await models.PreThesisGrade.update(
+                    {
+                        grade: grade,
+                        comment: comment || null
+                    },
+                    {
+                        where: {
+                            id: existingGrade.id
+                        },
+                        transaction
+                    }
+                );
+            } else {
+                // Create new grade
+                await models.PreThesisGrade.create({
+                    preThesisId: preThesis.id,
+                    teacherId: t.id,
+                    grade: grade,
+                    comment: comment || null
+                }, { transaction });
+            }
+
+            // Update pre-thesis status based on grade
+            let newStatus = preThesis.status;
+            if (grade >= 50) {
+                newStatus = 'approved';
+            } else {
+                newStatus = 'failed';
+            }
+
+            await models.PreThesis.update(
+                { status: newStatus },
+                { where: { id: preThesis.id }, transaction }
+            );
+
+            // Get student for notification
+            const student = await models.Student.findOne({
+                where: { id: preThesis.studentId }
+            });
+
+            // Create notification for student
+            await createNotification({
+                recipientId: student.userId,
+                type: 'alert',
+                title: 'Pre-thesis Graded',
+                message: `Your pre-thesis "${preThesis.title}" has been graded: ${grade}/100 - ${newStatus.toUpperCase()}`
+            });
+
+            await transaction.commit();
+            return res.status(200).json({ 
+                message: "Pre-thesis graded successfully",
+                grade: grade,
+                status: newStatus,
+                semesterEndDate: semesterEndDate
+            });
+
+        } catch (error) {
+            console.error('Error grading pre-thesis:', error);
+            await transaction.rollback();
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getPreThesisGrade(req, res) {
+        const userId = req.user.id;
+        const preThesisId = req.params.preThesisId;
+
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+
+            // Find pre-thesis and verify supervisor access (without semester join)
+            const preThesis = await models.PreThesis.findOne({
+                where: {
+                    id: preThesisId,
+                },
+                include: [
+                    {
+                        model: models.Topic,
+                        as: 'preThesisTopic',
+                        where: {
+                            supervisorId: t.id
+                        },
+                        attributes: ['id', 'topic', 'description', 'semesterId']
+                    }
+                ]
+            });
+
+            if (!preThesis) {
+                return res.status(404).json({ message: "Pre-thesis not found or access denied" });
+            }
+
+            // Get semester information from MySQL
+            const semester = await models.Semester.findByPk(preThesis.preThesisTopic.semesterId, {
+                attributes: ['id', 'name']
+            });
+
+            if (!semester) {
+                return res.status(404).json({ message: "Semester not found" });
+            }
+
+            // Get semester end date from MongoDB configuration
+            const endDateConfig = await Configuration.findOne({
+                key: `end_date_${semester.id}`,
+                semesterId: semester.id,
+                scope: 'semester'
+            });
+
+            let canGrade = true;
+            let semesterEndDate = null;
+
+            if (endDateConfig && endDateConfig.value) {
+                semesterEndDate = new Date(endDateConfig.value);
+                const currentDate = new Date();
+                canGrade = currentDate <= semesterEndDate;
+            }
+
+            // Get existing grade
+            const grade = await models.PreThesisGrade.findOne({
+                where: {
+                    preThesisId: preThesis.id,
+                    teacherId: t.id
+                }
+            });
+
+            return res.status(200).json({ 
+                message: "Grade fetched successfully",
+                grade: grade,
+                semester: {
+                    id: semester.id,
+                    name: semester.name,
+                    endDate: semesterEndDate
+                },
+                canGrade: canGrade
+            });
+
+        } catch (error) {
+            console.error('Error fetching pre-thesis grade:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
     async assignThesis(req, res) {
         const transaction = await sequelize.transaction();
         const userId = req.user.id;
@@ -729,7 +996,7 @@ class TeacherController {
             });
 
             await createNotification({
-                recipientId: student.id,
+                recipientId: s.userId,
                 type: 'alert',
                 title: 'Thesis Assigned',
                 message: `You have been assigned a new thesis: ${thesis.title}`
@@ -836,11 +1103,17 @@ class TeacherController {
 
             await thesis.save();
 
+            const student = await models.Student.findOne({
+                where: {
+                    id: thesis.studentId
+                }
+            });
+
             await createNotification({
-                recipientId: thesis.studentId,
+                recipientId: student.userId,
                 type: 'alert',
                 title: 'Thesis Update!',
-                message: 'Your Thesis has been updated by the supervisor'
+                message: `Your thesis has been updated by your supervisor: ${thesis.title}`
             })
 
             return res.status(200).json({ message: "Thesis updated successfully", thesis });

@@ -1,5 +1,6 @@
 const { createNotification } = require('../services/notificationService');
 const Notification = require('../models/monongoDB/Notification');
+const { create } = require('../models/User');
 
 class NotificationController {
     async sendNotification(req, res) {
@@ -25,7 +26,7 @@ class NotificationController {
             return res.status(400).json({ error: 'Recipient ID is required' });
         }
         try {
-            const notifications = await Notification.find({ recipientId });
+            const notifications = await Notification.find({ recipientId }).sort({ createdAt: -1 });
             res.status(200).json(notifications);
         } catch (error) {
             console.log(error)

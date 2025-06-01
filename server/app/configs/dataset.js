@@ -1,11 +1,15 @@
 const { hash } = require('bcrypt');
 const { models } = require('../models');
 const sequelize = require('./userDB');
+const connectMongo = require('./mongoDB');
+const Configuration = require('../models/monongoDB/Configuration');
 
 const seedDatabase = async () => {
   try {
-    await sequelize.sync({ force: true }); // Drops and recreates tables
+    await sequelize.sync({ force: true });
+    await connectMongo();
     console.log('Database synced!');
+
 
     // Insert Users (update fields if schema changed)
     const accounts = [
@@ -91,12 +95,62 @@ const seedDatabase = async () => {
       { userId: users[5].id, fullName: 'Moderator One', email: 'moderator1@example.com', phone: '1231231234' },
     ]);
 
+    const activeSemester = await models.Semester.findOrCreate({
+        where: { isActive: true },
+        defaults: {
+            name: 'Fall 2025',
+            startDate: new Date(),
+            endDate: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+            isActive: true,
+            isCurrent: true,
+            allowView: true,
+        }
+    });
+
+    const semesterId = activeSemester[0].id;
+    
+    const studentSemester = await models.StudentSemester.bulkCreate(
+        students.map((student, index) => ({
+            studentId: student.id,
+            semesterId: semesterId,
+            status: 'active',
+            type: index < 10 ? 'pre-thesis' : 'thesis',
+            isRegistered: false,
+        }))
+    );
+
+    if (activeSemester[1]) {
+        console.log('Creating new semester configurations...');
+        const configurations = [
+            { key: `semester_name_${semesterId}`, name: 'Semester Name', value: activeSemester[0].name, scope: 'semester', semesterId },
+            { key: `start_date_${semesterId}`, name: 'Start Date', value: activeSemester[0].startDate, scope: 'semester', semesterId },
+            { key: `end_date_${semesterId}`, name: 'End Date', value: activeSemester[0].endDate, scope: 'semester', semesterId },
+            { key: `pre_thesis_registration_deadline_${semesterId}`, name: 'Pre-Thesis Registration Deadline', value: activeSemester[0].preThesisRegistrationDeadline || '', scope: 'semester', semesterId },
+            { key: `pre_thesis_submission_deadline_${semesterId}`, name: 'Pre-Thesis Submission Deadline', value: activeSemester[0].preThesisSubmissionDeadline || '', scope: 'semester', semesterId },
+            { key: `thesis_registration_deadline_${semesterId}`, name: 'Thesis Registration Deadline', value: activeSemester[0].thesisRegistrationDeadline || '', scope: 'semester', semesterId },
+            { key: `thesis_submission_deadline_${semesterId}`, name: 'Thesis Submission Deadline', value: activeSemester[0].thesisSubmissionDeadline || '', scope: 'semester', semesterId }
+        ];
+
+        const savedConfigurations = await Configuration.insertMany(configurations);
+        console.log('Configurations saved:', savedConfigurations.length, 'documents');
+        console.log('Active semester created:', activeSemester[0].name);
+    } else {
+        console.log('Active semester already exists:', activeSemester[0].name);
+    }
+
+    
     console.log('Database seeded successfully!');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('Error seeding to database:', error);
   } finally {
     await sequelize.close();
   }
 };
 
-seedDatabase();
+seedDatabase().then(() => {
+  console.log('Script completed');
+  process.exit(0);
+}).catch((error) => {
+  console.error('Script failed:', error);
+  process.exit(1);
+});

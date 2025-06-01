@@ -69,7 +69,19 @@ Teacher.init({
     sequelize,
     modelName: 'Teacher',
     tableName: 'teachers',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+        beforeCreate: (teacher, options) => {
+            if (teacher.email) {
+                teacher.email = teacher.email.toLowerCase();
+            }
+        },
+        beforeUpdate: (teacher, options) => {
+            if (teacher.email) {
+                teacher.email = teacher.email.toLowerCase();
+            }
+        }
+    }
 });
 
 module.exports = Teacher;

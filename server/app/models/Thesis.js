@@ -45,17 +45,22 @@ Thesis.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
-    report: {
+    videoUrl: {
         type: DataTypes.STRING,
-        allowNull: true
-    },
-    presentation: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
-    demo: {
-        type: DataTypes.STRING,
-        allowNull: true
+        allowNull: true,
+        validate: {
+            isUrl: {
+                msg: 'Must be a valid URL'
+            },
+            isYouTubeUrl(value) {
+                if (value && value.trim()) {
+                    const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/).+$/i;
+                    if (!youtubePattern.test(value)) {
+                        throw new Error('Must be a valid YouTube URL');
+                    }
+                }
+            }
+        }
     },
     finalGrade: {
         type: DataTypes.DOUBLE,
@@ -63,18 +68,6 @@ Thesis.init({
         validate: {
             min: 0,
             max: 100
-        }
-    },
-    documentDeadline: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        validate: {
-            isDate: true,
-            isBeforeDensfeDate(value) {
-                if (value && this.defenseDate && value >= this.defenseDate) {
-                    throw new Error('Document deadline must be before defense date');
-                }
-            }
         }
     },
     defenseDate: {
@@ -85,11 +78,11 @@ Thesis.init({
         }
     },
     status: {
-        type: DataTypes.ENUM('pending', 'draft', 'submitted', 'pending defense', 'rejected', 'defended', 'complete', 'failed'),
+        type: DataTypes.ENUM('pending', 'submitted', 'pending defense', 'rejected', 'defended', 'complete', 'failed'),
         allowNull: false,
         defaultValue: 'pending',
         validate: {
-            isIn: [['pending', 'draft', 'submitted', 'pending defense', 'rejected', 'defended', 'complete', 'failed']]
+            isIn: [['pending', 'submitted', 'pending defense', 'rejected', 'defended', 'complete', 'failed']]
         }
     },
 }, {

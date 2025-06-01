@@ -30,4 +30,10 @@ router.get('/moderators/dashboard', AdminController.getModeratorDashboard);
 router.put('/moderators/:moderatorId/update', AdminController.updateModerator);
 router.get('/moderators', AdminController.getModerators);
 
+router.get('/semesters/:semesterId/teachers', AdminController.getTeachersBySemester);
+router.post('/semesters/:semesterId/teachers/assign', AdminController.assignTeacherToSemester);
+router.post('/semesters/:semesterId/teachers/assign-multiple', AdminController.assignMultipleTeachersToSemester);
+router.put('/semesters/:semesterId/teachers/:teacherId/slots', AdminController.updateTeacherSlots);
+router.delete('/semesters/:semesterId/teachers/:teacherId/unassign', AdminController.unassignTeacherFromSemester);
+
 module.exports = router;

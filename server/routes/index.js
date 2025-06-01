@@ -4,7 +4,6 @@ const teacher = require('./teacher');
 const student = require('./student');
 const site = require('./site');
 const { authenticateToken, authorizeRoles } = require('../app/middlewares/auth');
-const Student = require('../app/models/Student');
 
 function router (app) {
   app.use('/api/auth', auth);

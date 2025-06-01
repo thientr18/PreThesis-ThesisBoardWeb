@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const ConfigurationSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
   name: { type: String },
-  value: { type: String },
+  value: { type: String, default: '' },
   scope: {
     type: String,
     enum: ['global', 'semester'],

@@ -58,7 +58,19 @@ Admin.init({
     sequelize,
     modelName: 'Admin',
     tableName: 'admins',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+        beforeCreate: (admin, options) => {
+            if (admin.email) {
+                admin.email = admin.email.toLowerCase();
+            }
+        },
+        beforeUpdate: (admin, options) => {
+            if (admin.email) {
+                admin.email = admin.email.toLowerCase();
+            }
+        }
+    }
 });
 
 module.exports = Admin;

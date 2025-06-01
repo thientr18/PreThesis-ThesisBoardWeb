@@ -1,6 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/userDB');
-const StudentSemester = require('./StudentSemester');
 const Topic = require('./Topic');
 const Student = require('./Student');
 
@@ -14,7 +13,6 @@ PreThesis.init({
     studentId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        primaryKey: true,
         references: {
             model: Student,
             key: 'id'
@@ -23,7 +21,6 @@ PreThesis.init({
     topicId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        primaryKey: true,
         references: {
             model: Topic,
             key: 'id'
@@ -37,13 +34,22 @@ PreThesis.init({
         type: DataTypes.TEXT,
         allowNull: true
     },
-    report: {
+    videoUrl: {
         type: DataTypes.STRING,
-        allowNull: true
-    },
-    demo: {
-        type: DataTypes.STRING,
-        allowNull: true
+        allowNull: true,
+        validate: {
+            isUrl: {
+                msg: 'Must be a valid URL'
+            },
+            isYouTubeUrl(value) {
+                if (value && value.trim()) {
+                    const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/).+$/i;
+                    if (!youtubePattern.test(value)) {
+                        throw new Error('Must be a valid YouTube URL');
+                    }
+                }
+            }
+        }
     },
     grade: {
         type: DataTypes.DOUBLE,
@@ -52,14 +58,6 @@ PreThesis.init({
         validate: {
             min: 0,
             max: 100
-        }
-    },
-    dueDate: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        validate: {
-            isDate: true,
-            isAfter: new Date().toISOString()
         }
     },
     status: {

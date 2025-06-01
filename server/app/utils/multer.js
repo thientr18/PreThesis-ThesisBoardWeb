@@ -1,32 +1,99 @@
 const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const { studentId, assignmentId, documentType } = req.body;
-    if (!['prethesis', 'thesis'].includes(documentType)) {
-      return cb(new Error('Invalid document type'), null);
+// Create uploads directories if they don't exist
+const uploadsBaseDir = path.join(__dirname, '../../uploads');
+const preThesisDir = path.join(uploadsBaseDir, 'pre-thesis');
+const thesisDir = path.join(uploadsBaseDir, 'thesis');
+
+// Ensure directories exist
+[uploadsBaseDir, preThesisDir, thesisDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
     }
-
-    const uploadDir = path.join(__dirname, 'uploads', documentType, String(assignmentId), String(studentId));
-    fs.mkdirSync(uploadDir, { recursive: true });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const safeName = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${timestamp}_${safeName}`);
-  }
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowed = /pdf|doc|docx/;
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.test(ext)) cb(null, true);
-  else cb(new Error('Unsupported file type'), false);
+// Configure storage for pre-thesis
+const preThesisStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, preThesisDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = path.extname(file.originalname);
+        const originalNameWithoutExt = path.basename(file.originalname, extension);
+        cb(null, `prethesis-${uniqueSuffix}-${originalNameWithoutExt}${extension}`);
+    }
+});
+
+// Configure storage for thesis
+const thesisStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, thesisDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = path.extname(file.originalname);
+        const originalNameWithoutExt = path.basename(file.originalname, extension);
+        cb(null, `thesis-${uniqueSuffix}-${originalNameWithoutExt}${extension}`);
+    }
+});
+
+const createFileFilter = (allowedFieldTypes) => {
+    return (req, file, cb) => {
+        const extension = path.extname(file.originalname).toLowerCase();
+        const fieldAllowedTypes = allowedFieldTypes[file.fieldname] || [];
+        
+        if (fieldAllowedTypes.includes(extension)) {
+            cb(null, true);
+        } else {
+            cb(new Error(`Invalid file type for ${file.fieldname}. Allowed: ${fieldAllowedTypes.join(', ')}`), false);
+        }
+    };
 };
 
-const upload = multer({ storage, fileFilter }).array('files', 10);
+// Pre-thesis file types
+const preThesisFileTypes = {
+    'report': ['.pdf', '.doc', '.docx'],
+    'project': ['.zip', '.rar']
+};
 
-module.exports = upload;
+// Thesis file types (more comprehensive)
+const thesisFileTypes = {
+    'report': ['.pdf', '.doc', '.docx'],
+    'project': ['.zip', '.rar'],
+    'presentation': ['.pdf', '.ppt', '.pptx'],
+};
+
+// Configure multer
+const preThesisUpload = multer({
+    storage: preThesisStorage,
+    fileFilter: createFileFilter(preThesisFileTypes),
+    limits: {
+        fileSize: 100 * 1024 * 1024 // 100MB limit
+    }
+});
+
+const thesisUpload = multer({
+    storage: thesisStorage,
+    fileFilter: createFileFilter(thesisFileTypes),
+    limits: {
+        fileSize: 100 * 1024 * 1024 // 100MB limit
+    }
+});
+
+const uploadPreThesisReportFile = preThesisUpload.single('report');
+const uploadPreThesisProjectFile = preThesisUpload.single('project');
+
+const uploadThesisReportFile = thesisUpload.single('report');
+const uploadThesisProjectFile = thesisUpload.single('project');
+const uploadThesisPresentationFile = thesisUpload.single('presentation');
+
+module.exports = {
+    uploadPreThesisReportFile,
+    uploadPreThesisProjectFile,
+    uploadThesisReportFile,
+    uploadThesisProjectFile,
+    uploadThesisPresentationFile
+};

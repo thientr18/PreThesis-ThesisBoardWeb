@@ -3,9 +3,7 @@ const share = require('../utils/share');
 const { Op } = require('sequelize');
 
 const { createNotification } = require('../services/notificationService');
-const Notification = require('../models/monongoDB/Notification');
-const { create } = require('../models/User');
-
+const Configuration = require('../models/monongoDB/Configuration');
 class StudentController {
     async getProfile(req, res) {
         const studentId = req.user.id;
@@ -24,7 +22,7 @@ class StudentController {
             let enrolled = [];
 
             if ( activeSemester.id === currentSemester.id ) {
-                enrolled = currentSemester
+                enrolled = [activeSemester];
             } else {
                 enrolled = [activeSemester, currentSemester]
             }
@@ -38,7 +36,7 @@ class StudentController {
                     {
                         model: models.Semester,
                         as: 'semester',
-                        attributes: ['name', 'startDate', 'endDate', 'isCurrent', 'isActive'],
+                        attributes: ['name', 'isCurrent', 'isActive'],
                     }
                 ],
                 attributes: ['studentId', 'semesterId', 'type', 'isRegistered'],
@@ -163,8 +161,12 @@ class StudentController {
                 });
             }
 
+            const teacher = await models.Teacher.findOne({
+                where: { id: topic.supervisorId }
+            });
+
             const notiTeacher = await createNotification({
-                recipientId: topic.supervisorId,
+                recipientId: teacher.userId,
                 type: 'alert',
                 title: 'Topic Application',
                 message: `You have recieved a new application for the topic ${topic.topic}`,
@@ -270,12 +272,85 @@ class StudentController {
                                 attributes: ['id', 'fullName', 'email', 'phone'],
                             }
                         ],
+                    },
+                    {
+                        model: models.PreThesisSubmission,
+                        as: 'submissions',
+                        required: false,
+                        order: [['submittedAt', 'DESC']],
+                    },
+                    {
+                        model: models.PreThesisGrade,
+                        as: 'grades',
+                        required: false,
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ],
+                        order: [['createdAt', 'DESC']],
                     }
                 ]
             });
             if (!preThesis) return res.status(404).json({ message: "No pre-thesis found" });
 
-            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis });
+                        const latestGrade = await models.PreThesisGrade.findOne({
+                where: {
+                    preThesisId: preThesis.id
+                },
+                include: [
+                    {
+                        model: models.Teacher,
+                        as: 'teacher',
+                        attributes: ['id', 'fullName', 'email', 'phone'],
+                    }
+                ],
+                order: [['createdAt', 'DESC']],
+            });
+
+            // Get submission deadline
+            const submissionDeadlineConfig = await Configuration.findOne({
+                key: `pre_thesis_submission_deadline_${semesterId}`,
+                semesterId: parseInt(semesterId),
+                scope: 'semester'
+            });
+
+            const submissionDeadline = submissionDeadlineConfig ? submissionDeadlineConfig.value : null;
+            const isSubmissionAllowed = submissionDeadline ? new Date() <= new Date(submissionDeadline) : true;
+
+            const submissions = preThesis.submissions || [];
+
+            const reportSubmissions = submissions.filter(sub => sub.type === 'report');
+            const projectSubmissions = submissions.filter(sub => sub.type === 'project');
+
+            const latestReportSubmission = reportSubmissions.length > 0 
+                ? reportSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+            const latestProjectSubmission = projectSubmissions.length > 0 
+                ? projectSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+
+            const preThesisWithSubmissions = {
+                ...preThesis.toJSON(),
+                report: latestReportSubmission ? latestReportSubmission.fileUrl : null,
+                project: latestProjectSubmission ? latestProjectSubmission.fileUrl : null,
+                reportSubmittedAt: latestReportSubmission ? latestReportSubmission.submittedAt : null,
+                projectSubmittedAt: latestProjectSubmission ? latestProjectSubmission.submittedAt : null,
+                // Include submission counts for display
+                reportSubmissionCount: reportSubmissions.length,
+                projectSubmissionCount: projectSubmissions.length,
+                // Include grade information from PreThesisGrade table
+                grade: latestGrade ? latestGrade.grade : null,
+                feedback: latestGrade ? latestGrade.feedback : null,
+                gradedAt: latestGrade ? latestGrade.createdAt : null,
+                // Include deadline information
+                submissionDeadline: submissionDeadline,
+                isSubmissionAllowed: isSubmissionAllowed
+            }
+
+            return res.status(200).json({ message: "Pre-thesis fetched successfully", preThesis: preThesisWithSubmissions });
         } catch (error) {
             console.error('Error fetching pre-thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -380,4 +455,4 @@ class StudentController {
     }
 }
 
-module.exports = new StudentController(); 
+module.exports = new StudentController();

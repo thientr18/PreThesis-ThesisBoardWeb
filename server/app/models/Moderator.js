@@ -70,7 +70,19 @@ Moderator.init({
     sequelize,
     modelName: 'Moderator',
     tableName: 'moderators',
-    timestamps: true
+    timestamps: true,
+    hooks: {
+        beforeCreate: (moderator, options) => {
+            if (moderator.email) {
+                moderator.email = moderator.email.toLowerCase();
+            }
+        },
+        beforeUpdate: (moderator, options) => {
+            if (moderator.email) {
+                moderator.email = moderator.email.toLowerCase();
+            }
+        }
+    }
 });
 
 module.exports = Moderator;

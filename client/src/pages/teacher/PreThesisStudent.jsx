@@ -15,7 +15,6 @@ const PreThesisStudent = () => {
     const fetchPreThesisStudents = async () => {
         try {
             const response = await api.get('/teacher/pre-thesis/assigned');
-            console.log(response.data);
             setSemester(response.data.semester);
             setPreThesisStudents(response.data.preThesisStudents);
         } catch (error) {

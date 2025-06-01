@@ -1,30 +1,34 @@
 const sequelize = require('../configs/userDB');
 const Admin = require('./Admin');
-const Grade = require('./Grade');
 const Moderator = require('./Moderator');
 const PreThesis = require('./PreThesis');
+const PreThesisGrade = require('./PreThesisGrade');
 const PreThesisRegistration = require('./PreThesisRegistration');
+const PreThesisSubmission = require('./PreThesisSubmission');
 const Semester = require('./Semester');
 const Student = require('./Student');
 const StudentSemester = require('./StudentSemester');
 const Teacher = require('./Teacher');
 const TeacherSemester = require('./TeacherSemester');
 const Thesis = require('./Thesis');
+const ThesisGrade = require('./ThesisGrade');
 const Topic = require('./Topic');
 const User = require('./User');
 
 const models = {
   Admin,
-  Grade,
   Moderator,
   Semester,
   Student,
   PreThesis,
+  PreThesisGrade,
   PreThesisRegistration,
+  PreThesisSubmission,
   StudentSemester,
   Teacher,
   TeacherSemester,
   Thesis,
+  ThesisGrade,
   Topic,
   User,
 };
@@ -46,21 +50,17 @@ const syncModels = async () => {
 Admin.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasOne(Admin, { foreignKey: 'userId', as: 'admin' });
 
-// Grade and PreThesis
-Grade.belongsTo(PreThesis, { foreignKey: 'preThesisId', as: 'preThesis' });
-PreThesis.hasMany(Grade, { foreignKey: 'preThesisId', as: 'grades' });
-
-// Grade and Thesis
-Grade.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
-Thesis.hasMany(Grade, { foreignKey: 'thesisId', as: 'grades' });
-
-// Grade and Teacher
-Grade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
-Teacher.hasMany(Grade, { foreignKey: 'teacherId', as: 'grades' });
-
 // Moderator and User
 Moderator.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasOne(Moderator, { foreignKey: 'userId', as: 'moderator' });
+
+// PreThesis and PreThesisGrade
+PreThesis.hasMany(PreThesisGrade, { foreignKey: 'preThesisId', as: 'grades' });
+PreThesisGrade.belongsTo(PreThesis, { foreignKey: 'preThesisId', as: 'preThesis' });
+
+// PreThesis and PreTheSubmission
+PreThesis.hasMany(PreThesisSubmission, { foreignKey: 'preThesisId', as: 'submissions' });
+PreThesisSubmission.belongsTo(PreThesis, { foreignKey: 'preThesisId', as: 'preThesis' });
 
 // PreThesis and Student
 PreThesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
@@ -77,6 +77,10 @@ Student.hasMany(PreThesisRegistration, { foreignKey: 'studentId', as: 'preThesis
 // PreThesisRegistration and Topic
 PreThesisRegistration.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
 Topic.hasMany(PreThesisRegistration, { foreignKey: 'topicId', as: 'preThesisRegistrations' });
+
+// PreThesisGrade and Teacher
+PreThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+Teacher.hasMany(PreThesisGrade, { foreignKey: 'teacherId', as: 'preThesisGrades' });
 
 // Student and User
 Student.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -98,6 +102,10 @@ Teacher.hasMany(TeacherSemester, { foreignKey: 'teacherId', as: 'teacherSemester
 TeacherSemester.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
 Semester.hasMany(TeacherSemester, { foreignKey: 'semesterId', as: 'teacherSemesters' });
 
+// Thesis and Grade
+Thesis.hasMany(ThesisGrade, { foreignKey: 'thesisId', as: 'grades' });
+ThesisGrade.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+
 // Thesis and Student
 Thesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
 Student.hasMany(Thesis, { foreignKey: 'studentId', as: 'thesis' });
@@ -109,6 +117,10 @@ Teacher.hasMany(Thesis, { foreignKey: 'supervisorId', as: 'thesis' });
 // Thesis and Semester
 Thesis.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
 Semester.hasMany(Thesis, { foreignKey: 'semesterId', as: 'thesis' });
+
+// ThesisGrade and Teacher
+ThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+Teacher.hasMany(ThesisGrade, { foreignKey: 'teacherId', as: 'thesisGrades' });
 
 // Topic and Teacher
 Topic.belongsTo(Teacher, { foreignKey: 'supervisorId', as: 'supervisor' });
