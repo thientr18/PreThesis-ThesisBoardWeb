@@ -1,25 +1,25 @@
 const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../configs/userDB');
-const PreThesis = require('./PreThesis');
+const Thesis = require('./Thesis');
 
-class PreThesisSubmission extends Model {}
-PreThesisSubmission.init({
+class ThesisSubmission extends Model {}
+ThesisSubmission.init({
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    preThesisId: {
+    thesisId: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: PreThesis,
+            model: Thesis,
             key: 'id'
         },
         onDelete: 'CASCADE'
     },
     type: {
-        type: DataTypes.ENUM('report', 'project'),
+        type: DataTypes.ENUM('report', 'project', 'presentation'),
         allowNull: false
     },
     fileUrl: {
@@ -33,9 +33,9 @@ PreThesisSubmission.init({
     }
 }, {
     sequelize,
-    modelName: 'PreThesisSubmission',
-    tableName: 'pre_thesis_submissions',
+    modelName: 'ThesisSubmission',
+    tableName: 'thesis_submissions',
     timestamps: true,
 });
 
-module.exports = PreThesisSubmission;
+module.exports = ThesisSubmission;

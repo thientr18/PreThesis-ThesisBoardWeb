@@ -23,7 +23,7 @@ router.post('/cancel-topic/:topicId', StudentController.cancelTopic);
 router.get('/pre-thesis/:semesterId', StudentController.getPreThesis);
 router.post('/pre-thesis/:preThesisId/submit-report', uploadPreThesisReportFile, StorageController.submitPreThesisReport);
 router.post('/pre-thesis/:preThesisId/submit-project', uploadPreThesisProjectFile, StorageController.submitPreThesisProject);
-router.post('/pre-thesis/:preThesisId/submit-video', StorageController.submitPreThesisVideoUrl);
+router.post('/pre-thesis/:preThesisId/submit-demo', StorageController.submitPreThesisDemoUrl);
 router.get('/pre-thesis/files/download/:filename', StorageController.downloadFilePreThesis);
 
 router.get('/thesis/contact-supervisor', StudentController.getThesisContacts);
@@ -31,7 +31,7 @@ router.get('/thesis/:semesterId', StudentController.getThesis);
 router.post('/thesis/:thesisId/submit-report', uploadThesisReportFile, StorageController.submitThesisReport);
 router.post('/thesis/:thesisId/submit-project', uploadThesisProjectFile, StorageController.submitThesisProject);
 router.post('/thesis/:thesisId/submit-presentation', uploadThesisPresentationFile, StorageController.submitThesisPresentation);
-router.post('/thesis/:thesisId/submit-video', StorageController.submitThesisVideoUrl);
+router.post('/thesis/:thesisId/submit-demo', StorageController.submitThesisDemoUrl);
 router.get('/thesis/files/download/:filename', StorageController.downloadFileThesis);
 
 module.exports = router;

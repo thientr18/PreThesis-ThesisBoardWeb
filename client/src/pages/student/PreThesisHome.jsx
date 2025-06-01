@@ -328,7 +328,7 @@ const PreThesisHome = () => {
             console.log('Video URL:', videoUrl);
 
             const response = await api.post(
-                `/student/pre-thesis/${preThesis.id}/submit-video`,
+                `/student/pre-thesis/${preThesis.id}/submit-demo`,
                 { videoUrl: videoUrl.trim() },
                 {
                     headers: {

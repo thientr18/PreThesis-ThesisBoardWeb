@@ -12,6 +12,7 @@ const Teacher = require('./Teacher');
 const TeacherSemester = require('./TeacherSemester');
 const Thesis = require('./Thesis');
 const ThesisGrade = require('./ThesisGrade');
+const ThesisSubmission = require('./ThesisSubmission');
 const Topic = require('./Topic');
 const User = require('./User');
 
@@ -29,6 +30,7 @@ const models = {
   TeacherSemester,
   Thesis,
   ThesisGrade,
+  ThesisSubmission,
   Topic,
   User,
 };
@@ -121,6 +123,10 @@ Semester.hasMany(Thesis, { foreignKey: 'semesterId', as: 'thesis' });
 // ThesisGrade and Teacher
 ThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
 Teacher.hasMany(ThesisGrade, { foreignKey: 'teacherId', as: 'thesisGrades' });
+
+// Thesis and ThesisSubmission
+ThesisSubmission.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+Thesis.hasMany(ThesisSubmission, { foreignKey: 'thesisId', as: 'submissions' });
 
 // Topic and Teacher
 Topic.belongsTo(Teacher, { foreignKey: 'supervisorId', as: 'supervisor' });

@@ -432,7 +432,7 @@ class StudentController {
                     studentId: s.id,
                     semesterId: semesterId,
                 },
-                attributes: ['id', 'studentId', 'supervisorId', 'semesterId', 'title', 'description', 'report', 'presentation', 'demo', 'finalGrade', 'status'],
+                attributes: ['id', 'studentId', 'supervisorId', 'semesterId', 'title', 'description', 'videoUrl', 'finalGrade', 'status'],
                 include: [
                     {
                         model: models.Student,
@@ -443,11 +443,93 @@ class StudentController {
                         model: models.Teacher,
                         as: 'supervisor',
                         attributes: ['userId', 'fullName', 'email', 'phone'],
+                    },
+                    {
+                        model: models.ThesisSubmission,
+                        as: 'submissions',
+                        required: false,
+                        order: [['submittedAt', 'DESC']],
+                    },
+                    {
+                        model: models.ThesisGrade,
+                        as: 'grades',
+                        required: false,
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ],
+                        order: [['createdAt', 'DESC']],
                     }
                 ]
             });
             if (!thesis) return res.status(404).json({ message: "No thesis found" });
-            return res.status(200).json({ message: "Thesis fetched successfully", thesis });
+
+            const latestGrade = await models.ThesisGrade.findOne({
+                where: {
+                    thesisId: thesis.id
+                },
+                include: [
+                    {
+                        model: models.Teacher,
+                        as: 'teacher',
+                        attributes: ['id', 'fullName', 'email', 'phone'],
+                    }
+                ],
+                order: [['createdAt', 'DESC']],
+            });
+
+            // Get submission deadline
+            const submissionDeadlineConfig = await Configuration.findOne({
+                key: `thesis_submission_deadline_${semesterId}`,
+                semesterId: parseInt(semesterId),
+                scope: 'semester'
+            });
+
+            const submissionDeadline = submissionDeadlineConfig ? submissionDeadlineConfig.value : null;
+            const isSubmissionAllowed = submissionDeadline ? new Date() <= new Date(submissionDeadline) : true;
+
+            const submissions = thesis.submissions || [];
+
+            const reportSubmissions = submissions.filter(sub => sub.type === 'report');
+            const projectSubmissions = submissions.filter(sub => sub.type === 'project');
+            const presentationSubmissions = submissions.filter(sub => sub.type === 'presentation');
+
+            const latestReportSubmission = reportSubmissions.length > 0 
+                ? reportSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+            const latestProjectSubmission = projectSubmissions.length > 0 
+                ? projectSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+            const latestPresentationSubmission = presentationSubmissions.length > 0 
+                ? presentationSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
+                : null;
+
+            const thesisWithSubmissions = {
+                ...thesis.toJSON(),
+                report: latestReportSubmission ? latestReportSubmission.fileUrl : null,
+                project: latestProjectSubmission ? latestProjectSubmission.fileUrl : null,
+                presentation: latestPresentationSubmission ? latestPresentationSubmission.fileUrl : null,
+                demo: thesis.videoUrl, // Map videoUrl to demo for frontend compatibility
+                reportSubmittedAt: latestReportSubmission ? latestReportSubmission.submittedAt : null,
+                projectSubmittedAt: latestProjectSubmission ? latestProjectSubmission.submittedAt : null,
+                presentationSubmittedAt: latestPresentationSubmission ? latestPresentationSubmission.submittedAt : null,
+                // Include submission counts for display
+                reportSubmissionCount: reportSubmissions.length,
+                projectSubmissionCount: projectSubmissions.length,
+                presentationSubmissionCount: presentationSubmissions.length,
+                // Include grade information from ThesisGrade table
+                finalGrade: latestGrade ? latestGrade.grade : null,
+                feedback: latestGrade ? latestGrade.feedback : null,
+                gradedAt: latestGrade ? latestGrade.createdAt : null,
+                // Include deadline information
+                submissionDeadline: submissionDeadline,
+                isSubmissionAllowed: isSubmissionAllowed
+            }
+
+            return res.status(200).json({ message: "Thesis fetched successfully", thesis: thesisWithSubmissions });
         } catch (error) {
             console.error('Error fetching thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });

@@ -10,7 +10,7 @@ const PreThesisHome = () => {
     const [topic, setTopic] = useState(null);
     const [student, setStudent] = useState(null);
     const [grade, setGrade] = useState('');
-    const [comment, setComment] = useState('');
+    const [feedback, setFeedback] = useState('');
     const [existingGrade, setExistingGrade] = useState(null);
     const [gradingLoading, setGradingLoading] = useState(false);
     const [submittingGrade, setSubmittingGrade] = useState(false);
@@ -47,7 +47,7 @@ const PreThesisHome = () => {
             if (response.data.grade) {
                 setExistingGrade(response.data.grade);
                 setGrade(response.data.grade.grade.toString());
-                setComment(response.data.grade.comment || '');
+                setFeedback(response.data.grade.feedback || '');
             }
             
             // Set semester info and grading permission
@@ -80,7 +80,7 @@ const PreThesisHome = () => {
             setSubmittingGrade(true);
             const response = await api.post(`/teacher/pre-thesis/${preThesisId}/grade`, {
                 grade: gradeValue,
-                comment: comment.trim()
+                feedback: feedback.trim()
             });
 
             alert('Grade submitted successfully!');
@@ -238,9 +238,6 @@ const PreThesisHome = () => {
             };
         }
     };
-
-    const isGradingDisabled = !canGrade || (preThesis?.status === 'approved' || preThesis?.status === 'failed');
-
 
     if (loading) {
         return <div className="dashboard-container">Loading...</div>;
@@ -524,7 +521,7 @@ const PreThesisHome = () => {
                 )}
             </div>
 
-{/* Grading Section */}
+            {/* Grading Section */}
             <h1>Grade Pre-Thesis</h1>
             <div className="grading-section">
                 {gradingLoading ? (
@@ -569,10 +566,10 @@ const PreThesisHome = () => {
                                             {getGradeStatus(existingGrade.grade).icon} {getGradeStatus(existingGrade.grade).status}
                                         </div>
                                     </div>
-                                    {existingGrade.comment && (
-                                        <div className="grade-comment-display">
-                                            <strong>Comment:</strong>
-                                            <p>{existingGrade.comment}</p>
+                                    {existingGrade.feedback && (
+                                        <div className="grade-feedback-display">
+                                            <strong>Feedback:</strong>
+                                            <p>{existingGrade.feedback}</p>
                                         </div>
                                     )}
                                     <div className="grade-metadata">
@@ -608,13 +605,13 @@ const PreThesisHome = () => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="comment" className="form-label">
-                                        Comments (Optional)
+                                    <label htmlFor="feedback" className="form-label">
+                                        Feedback (Optional)
                                     </label>
                                     <textarea
-                                        id="comment"
-                                        value={comment}
-                                        onChange={(e) => setComment(e.target.value)}
+                                        id="feedback"
+                                        value={feedback}
+                                        onChange={(e) => setFeedback(e.target.value)}
                                         className="form-textarea"
                                         rows="4"
                                         placeholder="Enter feedback and comments for the student..."

@@ -1,6 +1,7 @@
 const { models, sequelize } = require('../models');
 const Joi = require('joi');
 const share = require('../utils/share');
+
 class AdminController {
     // Route: /admin/profile
     async getProfile(req, res) {

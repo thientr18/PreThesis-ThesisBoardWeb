@@ -9,8 +9,6 @@ router.patch('/notifications/:id/read', NotificationController.readNotifications
 
 router.get('/profile/', TeacherController.getProfile);
 
-router.get('/files/download/:filename', StorageController.downloadFilePreThesisTeacher);
-
 router.get('/topic/', TeacherController.getTopics);
 router.post('/topic/', TeacherController.createTopic);
 router.put('/topic/:topicId', TeacherController.updateTopic);
@@ -28,7 +26,10 @@ router.get('/pre-thesis/:preThesisId/grade', TeacherController.getPreThesisGrade
 router.post('/thesis/assigned/:studentId/new', TeacherController.assignThesis);
 router.post('/thesis/assigned/:studentId/update', TeacherController.updateThesis);
 router.delete('/thesis/assigned/:thesisId/delete', TeacherController.deleteThesis);
+router.get('/thesis/files/download/:filename', StorageController.downloadFileThesisTeacher);
 router.get('/thesis/assigned', TeacherController.getThesisStudents);
 router.get('/thesis/:thesisId', TeacherController.getThesis);
+router.get('/thesis/:thesisId/grade', TeacherController.getThesisGrade);
+router.post('/thesis/:thesisId/grade', TeacherController.gradeThesis);
 
 module.exports = router;
