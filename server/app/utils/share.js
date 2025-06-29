@@ -588,6 +588,8 @@ module.exports = {
                 fullName: updatedAdmin.fullName,
                 email: updatedAdmin.email,
                 phone: updatedAdmin.phone,
+                birthDate: updatedAdmin.birthDate,
+                address: updatedAdmin.address,
             };
         } catch (error) {
             console.error('Error updating admin:', error);

@@ -28,9 +28,10 @@ const ThesisManagement = () => {
 
     // Fetch initial data
     useEffect(() => {
+        if (!user || !user.role) return;
         fetchSemesters();
         fetchActiveTeachers();
-    }, []);
+    }, [user]);
 
     // Auto-select newest semester
     useEffect(() => {
@@ -54,8 +55,8 @@ const ThesisManagement = () => {
 
     const fetchSemesters = async () => {
         try {
-            const response = await api.get('/admin/semesters');
-            
+            const response = await api.get(`/${user.role}/semesters`);
+
             // Process semesters to extract dates from configurations
             const processedSemesters = (response.data || []).map(semester => {
                 const startDateConfig = semester.configurations?.find(config => config.key.includes('start_date'));
@@ -77,7 +78,7 @@ const ThesisManagement = () => {
 
     const fetchActiveTeachers = async () => {
         try {
-            const response = await api.get('/admin/teachers/active');
+            const response = await api.get(`/${user.role}/teachers/active`);
             setActiveTeachers(response.data || []);
         } catch (error) {
             console.error('Error fetching active teachers:', error);
@@ -88,8 +89,8 @@ const ThesisManagement = () => {
     const fetchThesesBySemester = async (semesterId) => {
         try {
             setLoading(true);
-            const response = await api.get(`/admin/semesters/${semesterId}/theses`);
-            
+            const response = await api.get(`/${user.role}/semesters/${semesterId}/theses`);
+
             // Transform the data to match the expected structure
             const transformedTheses = (response.data || []).map(thesis => {
                 // Find supervisor and reviewer from teachers array
@@ -166,7 +167,7 @@ const ThesisManagement = () => {
 
         try {
             setLoading(true);
-            await api.post(`/admin/theses/${thesisId}/assign-reviewer`, {
+            await api.post(`/${user.role}/theses/${thesisId}/assign-reviewer`, {
                 reviewerId: assignmentData.reviewerId
             });
             
@@ -190,7 +191,7 @@ const ThesisManagement = () => {
 
         try {
             setLoading(true);
-            await api.post(`/admin/theses/${thesisId}/assign-committee`, {
+            await api.post(`/${user.role}/theses/${thesisId}/assign-committee`, {
                 committeeMembers: assignmentData.committeeMembers
             });
             
@@ -215,8 +216,8 @@ const ThesisManagement = () => {
         try {
             setLoading(true);
             const defenseDateTime = new Date(`${assignmentData.defenseDate}T${assignmentData.defenseTime}`);
-            
-            await api.post(`/admin/theses/${thesisId}/set-defense-date`, {
+
+            await api.post(`/${user.role}/theses/${thesisId}/set-defense-date`, {
                 defenseDate: defenseDateTime.toISOString()
             });
             
@@ -239,8 +240,8 @@ const ThesisManagement = () => {
             // Get thesis info for filename
             const thesis = theses.find(t => t.id === thesisId);
             const semester = semesters.find(s => s.id.toString() === selectedSemester);
-            
-            const response = await api.get(`/admin/theses/${thesisId}/export-registration?format=pdf`, {
+
+            const response = await api.get(`/${user.role}/theses/${thesisId}/export-registration?format=pdf`, {
                 responseType: 'blob'
             });
 
@@ -312,7 +313,7 @@ const ThesisManagement = () => {
     );
 
     // Check if user is admin
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'moderator') {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -451,7 +452,7 @@ const ThesisManagement = () => {
                                                                         const semester = semesters.find(s => s.id.toString() === selectedSemester);
 
                                                                         try {
-                                                                            const response = await api.get(`/admin/theses/${thesis.id}/export-final`, {
+                                                                            const response = await api.get(`/${user.role}/theses/${thesis.id}/export-final`, {
                                                                                 responseType: 'blob'
                                                                             });
                                                                             const blob = new Blob([response.data], { type: 'application/pdf' });

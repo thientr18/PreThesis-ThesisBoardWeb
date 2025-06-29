@@ -5,6 +5,7 @@ const NotificationController = require("../app/controllers/NotificationControlle
 const StorageController = require("../app/controllers/StorageController");
 
 router.get('/notifications', NotificationController.getNotifications);
+router.get('/notifications/all', NotificationController.getAllNotifications);
 router.patch('/notifications/:id/read', NotificationController.readNotifications);
 
 router.get('/profile/', TeacherController.getProfile);

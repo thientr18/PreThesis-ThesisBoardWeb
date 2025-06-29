@@ -9,6 +9,7 @@ const path = require('path');
 
 class AdminController {
     // Route: /admin/profile
+    // Rout: /moderator/profile
     async getProfile(req, res) {
         const userId = req.user.id;
         try {
@@ -23,6 +24,7 @@ class AdminController {
     }
     
     // Route: /admin/profile/update
+    // Route: /moderator/profile/update
     async updateProfile(req, res) {
         const t = await sequelize.transaction();
         const userId = req.user.id;
@@ -36,9 +38,21 @@ class AdminController {
         };
 
         try {
-            const profile = await share.updateAdminById(userId, profileData, t);
-            if (!profile) return res.status(404).json({ message: "User not found" });
-
+            const user = await share.getUserById(userId);
+            if (!user) return res.status(404).json({ message: "User not found" });
+            if (user.role !== 'admin' && user.role !== 'moderator') {
+                return res.status(403).json({ message: "Forbidden: Only admin or moderator can update profile" });
+            }
+            if (user.role === 'admin') {
+                const profile = await share.updateAdminById(userId, profileData, t);
+                if (!profile) return res.status(404).json({ message: "User not found" });
+            } else if (user.role === 'moderator') {
+                const profile = await share.updateModeratorById(userId, profileData, t);
+                if (!profile) return res.status(404).json({ message: "User not found" });
+            } else {
+                return res.status(403).json({ message: "Forbidden: Only admin or moderator can update profile" });
+            }
+            
             await t.commit();
 
             res.status(200).json({profile, message: "Profile updated successfully" });
@@ -50,6 +64,7 @@ class AdminController {
     }
 
     // Route: /admin/change-password
+    // Route: /moderator/change-password
     async changePassword(req, res) {
         const t = await sequelize.transaction();
         const userId = req.user.id;
@@ -79,6 +94,7 @@ class AdminController {
     }
 
     // Route: /admin/active-semester
+    // Route: /moderator/active-semester
     async activeSemester(req, res) {
         const id = req.params.id;
         try {
@@ -92,6 +108,7 @@ class AdminController {
 
     // APPLICATIONS
     // Route: /admin/home
+    // Route: /moderator/home
     async getHomePage(req, res) {
         try {
             const semester = await models.Semester.findOne({
@@ -121,6 +138,7 @@ class AdminController {
     }
 
     // Route: /admin/students/
+    // Route: /moderator/students/
     async getStudents(req, res) {
         let semesterId = req.query.semesterId || req.query.semester;
 
@@ -136,6 +154,7 @@ class AdminController {
     }
 
     // Route: /admin/semesters
+    // Route: /moderator/semesters
     async getSemesters(req, res) {
         try {
             const semesters = await models.Semester.findAll({
@@ -165,6 +184,7 @@ class AdminController {
     }
 
     // Route: /admin/students/new
+    // Route: /moderator/students/new
     async createStudent(req, res) {
         const t = await sequelize.transaction();
         const data = req.body;
@@ -209,6 +229,7 @@ class AdminController {
     }
 
     // Route: /admin/students/:id
+    // Route: /moderator/students/:id
     // async getStudentById(req, res) {
     //     try {
     //         const student = await share.getStudentById(req.params.teacherId);
@@ -222,6 +243,7 @@ class AdminController {
     // }
 
     // Route: /admin/students/:id/update
+    // Route: /moderator/students/:id/update
     async updateStudent(req, res) {
         const t = await sequelize.transaction();
         let transactionFinished = false;
@@ -275,6 +297,7 @@ class AdminController {
     }
 
     // Route: /admin/students/prethesis-assign-random
+    // Route: /moderator/students/prethesis-assign-random
     async assignPreThesisRandomly(req, res) {
         const t = await sequelize.transaction();
         const { studentIds, semesterId } = req.body;
@@ -424,6 +447,7 @@ class AdminController {
 
 
     // Route: /admin/students/prethesis-assign-specific
+    // Route: /moderator/students/prethesis-assign-specific
     async assignPreThesisToSpecificTopic(req, res) {
         const t = await sequelize.transaction();
         const { studentId, topicId, semesterId } = req.body;
@@ -518,6 +542,7 @@ class AdminController {
     }
 
     // Route: /admin/students/thesis-assign-random
+    // Route: /moderator/students/thesis-assign-random
     async assignThesisRandomly(req, res) {
         const t = await sequelize.transaction();
         const { studentIds, semesterId } = req.body;
@@ -675,6 +700,7 @@ class AdminController {
     }
 
     // Route: /admin/students/thesis-assign-specific
+    // Route: /moderator/students/thesis-assign-specific
     async assignThesisToSpecificTeacher(req, res) {
         const t = await sequelize.transaction();
         const { studentId, teacherId, semesterId } = req.body;
@@ -774,6 +800,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers
+    // Route: /moderator/teachers
     async getTeachers(req, res) {
         try {
             const teachers = await share.getAllTeachers();
@@ -787,6 +814,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers/new
+    // Route: /moderator/teachers/new
     async createTeacher(req, res) {
         const t = await sequelize.transaction();
         const data = req.body;
@@ -814,6 +842,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers/:id
+    // Route: /moderator/teachers/:id
     async getTeacherById(req, res) {
         try {
             const teacher = await share.getTeacherById(req.params.teacherId);
@@ -827,6 +856,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers/:id/update
+    // Route: /moderator/teachers/:id/update
     async updateTeacher(req, res) {
         const t = await sequelize.transaction();
         const teacherId = req.params.teacherId;
@@ -891,6 +921,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers/slots
+    // Route: /moderator/teachers/slots
     async getTeachersWithSlots(req, res) {
         try {
             // Get semesterId from query parameters
@@ -1030,6 +1061,7 @@ class AdminController {
     }
 
     // Route: /admin/semesters/:semesterId/teachers
+    // Route: /moderator/semesters/:semesterId/teachers
     async getTeachersBySemester(req, res) {
         const { semesterId } = req.params;
         
@@ -1084,6 +1116,7 @@ class AdminController {
     }
 
     // Route: /admin/semesters/:semesterId/teachers/assign
+    // Route: /moderator/semesters/:semesterId/teachers/assign
     async assignTeacherToSemester(req, res) {
         const t = await sequelize.transaction();
         const { semesterId } = req.params;
@@ -1093,8 +1126,7 @@ class AdminController {
             // Check if assignment already exists
             const existingAssignment = await models.TeacherSemester.findOne({
                 where: { teacherId, semesterId }
-            });
-            
+            });            
             if (existingAssignment) {
                 await t.rollback();
                 return res.status(400).json({ error: 'Teacher is already assigned to this semester' });
@@ -1105,6 +1137,10 @@ class AdminController {
             if (!teacher) {
                 await t.rollback();
                 return res.status(404).json({ error: 'Teacher not found' });
+            }
+            if (teacher.status !== 'active') {
+                await t.rollback();
+                return res.status(400).json({ error: 'Teacher is not active' });
             }
 
             // Verify semester exists
@@ -1131,6 +1167,7 @@ class AdminController {
     }
 
     // Route: /admin/semesters/:semesterId/teachers/assign-multiple
+    // Route: /moderator/semesters/:semesterId/teachers/assign-multiple
     async assignMultipleTeachersToSemester(req, res) {
         const t = await sequelize.transaction();
         const { semesterId } = req.params;
@@ -1149,6 +1186,19 @@ class AdminController {
                 },
                 attributes: ['teacherId']
             });
+
+            for (const teacherId of teacherIds) {
+                // Check if all the teacher exists
+                const teacher = await models.Teacher.findByPk(teacherId);
+                if (!teacher) {
+                    await t.rollback();
+                    return res.status(404).json({ error: `Teacher with ID ${teacherId} not found` });
+                }
+                if (teacher.status !== 'active') {
+                    await t.rollback();
+                    return res.status(400).json({ error: `Teacher with ID ${teacherId} is not active` });
+                }
+            }
 
             const existingTeacherIds = existingAssignments.map(a => a.teacherId);
             const newTeacherIds = teacherIds.filter(id => !existingTeacherIds.includes(id));
@@ -1256,11 +1306,60 @@ class AdminController {
     }
 
     // Route: /admin/semesters/:semesterId/teachers/:teacherId/unassign
+    // Route: /moderator/semesters/:semesterId/teachers/:teacherId/unassign
     async unassignTeacherFromSemester(req, res) {
         const t = await sequelize.transaction();
         const { semesterId, teacherId } = req.params;
         
         try {
+            // Check if assignment exists
+            const assignment = await models.TeacherSemester.findOne({
+                where: { teacherId, semesterId }
+            });
+            if (!assignment) {
+                await t.rollback();
+                return res.status(404).json({ error: 'Teacher assignment not found' });
+            }
+
+            // Check if there are any active theses or pre-theses for this teacher in the semester
+            const activePreTheses = await models.PreThesis.findOne({
+                include: [{
+                    model: models.Topic,
+                    as: 'preThesisTopic',
+                    where: {
+                        semesterId,
+                        supervisorId: teacherId
+                    },
+                    required: true
+                }]
+            });
+
+            // Check for active theses where teacher has any role (supervisor, reviewer, committee)
+            const activeTheses = await models.Thesis.findOne({
+                where: {
+                    semesterId
+                },
+                include: [{
+                    model: models.ThesisTeacher,
+                    as: 'thesisTeachers',
+                    where: {
+                        teacherId
+                    },
+                    required: true
+                }]
+            });
+
+            if (activePreTheses || activeTheses) {
+                await t.rollback();
+                const activeTypes = [];
+                if (activePreTheses) activeTypes.push('pre-thesis');
+                if (activeTheses) activeTypes.push('thesis');
+                
+                return res.status(400).json({ 
+                    error: `Cannot unassign teacher. Teacher has active ${activeTypes.join(' and ')} assignments in this semester.`
+                });
+            }
+
             const deleted = await models.TeacherSemester.destroy({
                 where: { teacherId, semesterId },
                 transaction: t
@@ -1281,6 +1380,7 @@ class AdminController {
     }
 
     // Route: /admin/teachers/active
+    // Route: /moderator/teachers/active
     async getActiveTeachers(req, res) {
         try {
             const activeTeachers = await models.Teacher.findAll({
@@ -1312,6 +1412,7 @@ class AdminController {
     }
 
     // Route: /admin/semesters/:semesterId/theses
+    // Route: /moderator/semesters/:semesterId/theses
     async getThesesBySemester(req, res) {
         const { semesterId } = req.params;
 
@@ -1386,6 +1487,7 @@ class AdminController {
     }
 
     // Route: /admin/theses/:thesisId/assign-reviewer
+    // Route: /moderator/theses/:thesisId/assign-reviewer
     async assignReviewerToThesis(req, res) {
         const t = await sequelize.transaction();
         const { thesisId } = req.params;
@@ -1447,6 +1549,20 @@ class AdminController {
                 message: `A reviewer has been assigned to your thesis ID ${thesisId}.`,
             });
 
+            await createNotification({
+                recipientId: thesis.supervisorId,
+                type: 'reminder',
+                title: 'Reviewer Assigned',
+                message: `A reviewer has been assigned to thesis ID ${thesisId}.`,
+            });
+
+            await createNotification({
+                recipientId: reviewerId,
+                type: 'reminder',
+                title: 'Reviewer Assignment',
+                message: `You have been assigned as a reviewer for thesis ID ${thesisId}.`,
+            });
+
             await t.commit();
             res.status(200).json({ message: "Reviewer assigned successfully" });
         } catch (error) {
@@ -1457,6 +1573,7 @@ class AdminController {
     }
 
     // Route: /admin/theses/:thesisId/assign-committee
+    // Route: /moderator/theses/:thesisId/assign-committee
     async assignCommitteeToThesis(req, res) {
         const t = await sequelize.transaction();
         const { thesisId } = req.params;
@@ -1531,6 +1648,13 @@ class AdminController {
                 message: `Committee members have been assigned to your thesis ID ${thesisId}.`,
             });
 
+            await createNotification({
+                recipientId: thesis.supervisorId,
+                type: 'reminder',
+                title: 'Committee Assigned',
+                message: `Committee members have been assigned to thesis ID ${thesisId}.`,
+            });
+
             await t.commit();
             res.status(200).json({ message: "Committee members assigned successfully" });
         } catch (error) {
@@ -1541,6 +1665,7 @@ class AdminController {
     }
 
     // Route: /admin/theses/:thesisId/set-defense-date
+    // Route: /moderator/theses/:thesisId/set-defense-date
     async setThesisDefenseDate(req, res) {
         const t = await sequelize.transaction();
         const { thesisId } = req.params;
@@ -1624,6 +1749,7 @@ class AdminController {
     }
 
     // Route: /admin/theses/:thesisId/export
+    // Route: /moderator/theses/:thesisId/export
     async exportThesisRegistrationReport(req, res) {
         const { thesisId } = req.params;
         const { format = 'pdf' } = req.query;
@@ -2098,6 +2224,7 @@ class AdminController {
     }
 
     // Route: /admin/prethesis?semesterId=...
+    // Route: /moderator/prethesis?semesterId=...
     async getPreThesesBySemester(req, res) {
         const { semesterId } = req.query;
         try {
@@ -2139,6 +2266,7 @@ class AdminController {
     }
 
     // Route: /admin/prethesis/:preThesisId/export-final
+    // Route: /moderator/prethesis/:preThesisId/export-final
     async exportPreThesisFinalReport(req, res) {
         const { preThesisId } = req.params;
         const { format = 'pdf' } = req.query;

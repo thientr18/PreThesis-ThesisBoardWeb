@@ -29,13 +29,15 @@ import PreThesisHome from '@/pages/teacher/PreThesisHome';
 import ThesisHome from '@/pages/teacher/ThesisHome';
 
 import StudentLayout from '@/layouts/StudentLayout';
-import StudentDashboard from '@/pages/student/StudentDashboard';
 import TopicList from '@/pages/student/TopicList';
 import ThesisContact from '@/pages/student/ThesisContact';
 import PreThesisHomeStudent from '@/pages/student/PreThesisHome';
 import ThesisHomeStudent from '@/pages/student/ThesisHome';
 
 import Notification from '@/pages/shared/Notification';
+import Notifications from '@/pages/shared/Notifications';
+import Announcements from '@/pages/shared/Announcements';
+import Announcement from '@/pages/shared/Announcement';
 
 const AppRoutes = () => {
   return (
@@ -59,6 +61,9 @@ const AppRoutes = () => {
                 <Route path="/configurations" element={<Configuration />} />
                 <Route path="/student/thesis" element={<ThesisManagement />} />
                 <Route path="/student/pre-thesis" element={<PreThesisManagement />} />
+                <Route path="/announcements" element={<Announcements />} />
+                <Route path="/announcement/:id" element={<Announcement />} />
+                <Route path="/notifications" element={<Notifications />} />
                 {/* Add more admin routes here */}
               </Routes>
             </AdminLayout>
@@ -72,7 +77,15 @@ const AppRoutes = () => {
             <ModeratorLayout>
               <Routes>
                 <Route path="/" element={<ModeratorDashboard />} />
-
+                <Route path='/student/management' element={<StudentConfig />} />
+                <Route path="/teacher/config" element={<TeacherConfig />} />
+                <Route path="/teacher/semester-assignment" element={<SemesterAssignment />} />
+                <Route path="/configurations" element={<Configuration />} />
+                <Route path="/student/thesis" element={<ThesisManagement />} />
+                <Route path="/student/pre-thesis" element={<PreThesisManagement />} />
+                <Route path="/announcements" element={<Announcements />} />
+                <Route path="/announcement/:id" element={<Announcement />} />
+                <Route path="/notifications" element={<Notifications />} />
                 {/* Add more moderator routes here */}
               </Routes>
             </ModeratorLayout>
@@ -86,7 +99,7 @@ const AppRoutes = () => {
             <TeacherLayout>
               <Routes>
 
-                <Route path="/" element={<TeacherDashboard />} />
+                <Route path="/" element={<Announcements />} />
                 <Route path="/pre-thesis/topic" element={<TeacherTopic />} />
                 <Route path="/pre-thesis/registration" element={<Registration />} />
                 <Route path="/thesis/assign-student" element={<AssignThesis />} />
@@ -94,6 +107,8 @@ const AppRoutes = () => {
                 <Route path="/pre-thesis/:preThesisId" element={<PreThesisHome />} />
                 <Route path="/thesis/student/" element={<ThesisStudent />} />
                 <Route path="/thesis/:thesisId" element={<ThesisHome />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/announcement/:id" element={<Announcement />} />
                 {/* Add more teacher routes here */}
               </Routes>
             </TeacherLayout>
@@ -106,11 +121,13 @@ const AppRoutes = () => {
           <ProtectedRoute roles={['student']}>
             <StudentLayout>
               <Routes>
-                <Route path="/" element={<StudentDashboard />} />
+                <Route path="/" element={<Announcements />} />
                 <Route path="/topic-list" element={<TopicList />} />
                 <Route path="/contact-supervisor" element={<ThesisContact />} />
                 <Route path="/pre-thesis/:semesterId" element={<PreThesisHomeStudent />} />
                 <Route path="/thesis/:semesterId" element={<ThesisHomeStudent />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/announcement/:id" element={<Announcement />} />
                 {/* Add more student routes here */}
               </Routes>
             </StudentLayout>

@@ -32,12 +32,21 @@ const Configuration = () => {
     });
 
     useEffect(() => {
+        if (!user || !user.role) return; // <-- Add this guard
+
         const fetchSemesters = async () => {
             try {
-                const response = await api.get('/admin/semesters');
+                const role = user.role;
+                if (role !== 'admin' && role !== 'moderator') {
+                    alert('You do not have permission to access this page.');
+                    console.log(`Unauthorized access attempt by user with role: ${role}`);
+                    navigate('/unauthorized');
+                    return;
+                }
+                const response = await api.get(`/${role}/semesters/`);
                 const semesterData = response.data || [];
                 setSemesters(semesterData);
-                
+
                 // Auto-select the newest semester
                 if (semesterData.length > 0 && !selectedSemester) {
                     const newestSemester = semesterData[0];
@@ -52,8 +61,6 @@ const Configuration = () => {
         const fetchCommonConfigurations = async () => {
             try {
                 const response = await api.get('/configurations/common/all');
-                
-                // Make sure we're accessing the right structure
                 if (response.data && response.data.configurations) {
                     setCommonConfigurations({
                         ...response.data.configurations,
@@ -62,7 +69,6 @@ const Configuration = () => {
                             : []
                     });
                 } else {
-                    console.error('Unexpected response structure:', response.data);
                     setCommonConfigurations({
                         activeSemester: null,
                         currentSemester: null,
@@ -70,7 +76,6 @@ const Configuration = () => {
                     });
                 }
             } catch (error) {
-                console.error("Error fetching common configurations:", error);
                 setCommonConfigurations({
                     activeSemester: null,
                     currentSemester: null,
@@ -81,7 +86,7 @@ const Configuration = () => {
 
         fetchSemesters();
         fetchCommonConfigurations();
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         const fetchConfigurations = async () => {
@@ -144,38 +149,36 @@ const Configuration = () => {
         });
     }
 
-    // ...existing code...
-const handleUpdateCommonConfigurations = async () => {
-    try {
-        // Ensure we're calling the correct endpoint for common configurations
-        const response = await api.put('/configurations/common/update', {
-            activeSemester: commonConfigurations.activeSemester,
-            currentSemester: commonConfigurations.currentSemester,
-            waitingSemesters: Array.isArray(commonConfigurations.waitingSemesters) 
-                ? commonConfigurations.waitingSemesters 
-                : []
-        });
-        
-        alert('Common configurations updated successfully!');
-        setShowCommonModal(false);
-        
-        // Refresh common configurations
-        const refreshResponse = await api.get('/configurations/common/all');
-        if (refreshResponse.data && refreshResponse.data.configurations) {
-            setCommonConfigurations({
-                ...refreshResponse.data.configurations,
-                waitingSemesters: Array.isArray(refreshResponse.data.configurations.waitingSemesters) 
-                    ? refreshResponse.data.configurations.waitingSemesters 
+    const handleUpdateCommonConfigurations = async () => {
+        try {
+            // Ensure we're calling the correct endpoint for common configurations
+            const response = await api.put('/configurations/common/update', {
+                activeSemester: commonConfigurations.activeSemester,
+                currentSemester: commonConfigurations.currentSemester,
+                waitingSemesters: Array.isArray(commonConfigurations.waitingSemesters) 
+                    ? commonConfigurations.waitingSemesters 
                     : []
             });
+            
+            alert('Common configurations updated successfully!');
+            setShowCommonModal(false);
+            
+            // Refresh common configurations
+            const refreshResponse = await api.get('/configurations/common/all');
+            if (refreshResponse.data && refreshResponse.data.configurations) {
+                setCommonConfigurations({
+                    ...refreshResponse.data.configurations,
+                    waitingSemesters: Array.isArray(refreshResponse.data.configurations.waitingSemesters) 
+                        ? refreshResponse.data.configurations.waitingSemesters 
+                        : []
+                });
+            }
+        } catch (error) {
+            console.error("Error updating common configurations:", error);
+            console.error("Error response:", error.response?.data);
+            alert(`Failed to update common configurations: ${error.response?.data?.error || error.message}`);
         }
-    } catch (error) {
-        console.error("Error updating common configurations:", error);
-        console.error("Error response:", error.response?.data);
-        alert(`Failed to update common configurations: ${error.response?.data?.error || error.message}`);
     }
-}
-// ...existing code...
     
     if (loading) {
         return <div className="config-container">Loading...</div>;
@@ -190,7 +193,7 @@ const handleUpdateCommonConfigurations = async () => {
 
             const response = await api.post('/semesters/new', formData);
 
-            const semestersResponse = await api.get('/admin/semesters');
+            const semestersResponse = await api.get(`/${user.role}/semesters/`);
             setSemesters(semestersResponse.data || []);
             setFormData({
                 name: '',

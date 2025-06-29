@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import api from "@/utils/axios";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function TeacherConfig() {
+    const { user } = useAuth();
     const [teachers, setTeachers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -71,9 +73,9 @@ export default function TeacherConfig() {
         }
         try {
             if (formMode === "add") {
-                await api.post("/admin/teachers/new", formData);
+                await api.post(`/${user.role}/teachers/new`, formData);
             } else {
-                await api.put(`/admin/teachers/${editTeacherId}/update`, formData);
+                await api.put(`/${user.role}/teachers/${editTeacherId}/update`, formData);
             }
             setShowForm(false);
             setFormData({
@@ -89,7 +91,7 @@ export default function TeacherConfig() {
             });
 
             // Refresh list
-            const response = await api.get("/admin/teachers");
+            const response = await api.get(`/${user.role}/teachers`);
             setTeachers(response.data);
         } catch (error) {
             setError("Failed to save teacher");
@@ -100,7 +102,7 @@ export default function TeacherConfig() {
     useEffect(() => {
         const fetchTeachers = async () => {
             try {
-                const response = await api.get("/admin/teachers");
+                const response = await api.get(`/${user.role}/teachers`);
                 setTeachers(response.data);
             } catch (error) {
                 setError("Failed to fetch teachers");
@@ -109,7 +111,7 @@ export default function TeacherConfig() {
             }
         };
         fetchTeachers();
-    }, []);
+    }, [user]);
 
     return (
         <div className="config-container">

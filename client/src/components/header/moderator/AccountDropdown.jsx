@@ -23,16 +23,6 @@ export default function AccountDropdown() {
         <span className="label">Change Password</span>
       </a>
 
-      <a className="dropdown-item" href="/moderator/system-settings">
-        <img className="icon" src="/system-settings.svg" alt="System Settings" />
-        <span className="label">System Settings</span>
-      </a>
-
-      <a className="dropdown-item" href="/moderator/all-reports">
-        <img className="icon" src="/all-reports.svg" alt="All Reports" />
-        <span className="label">All Reports</span>
-      </a>
-
       <button className="dropdown-item" onClick={handleLogout}>
         <img className="icon" src="/logout.svg" alt="Logout" />
         <span className="label">Logout</span>

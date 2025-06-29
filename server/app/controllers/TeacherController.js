@@ -1554,7 +1554,7 @@ async getThesis(req, res) {
                 );
             } else {
                 await models.Thesis.update(
-                    { finalGrade: null, status: 'in-progress' },
+                    { finalGrade: null },
                     { where: { id: thesis.id }, transaction }
                 );
             }

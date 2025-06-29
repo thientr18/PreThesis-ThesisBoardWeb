@@ -181,7 +181,7 @@ const ThesisHome = () => {
             fetchThesis(); // Refresh the thesis data
         } catch (error) {
             console.error("Error submitting grade:", error);
-            alert("An error occurred while submitting the grade. Please try again later.");
+            alert(error.response?.data?.message || "An error occurred while submitting the grade.");
         } finally {
             setSubmittingGrade(false);
         }

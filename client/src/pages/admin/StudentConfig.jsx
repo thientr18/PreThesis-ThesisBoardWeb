@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function StudentConfig() {
+    const { user } = useAuth();
     const [semesters, setSemesters] = useState([]);
     const [semesterId, setSemesterId] = useState('');
     const [students, setStudents] = useState([]);
@@ -37,6 +39,23 @@ export default function StudentConfig() {
     const [studentTypeFilter, setStudentTypeFilter] = useState('pre-thesis');
     const [availableTopics, setAvailableTopics] = useState([]);
     const [selectedTopic, setSelectedTopic] = useState('');
+
+    useEffect(() => {
+        if (!user || !user.role) return; // Wait for user to be loaded
+        const fetchSemesters = async () => {
+            try {
+                const response = await api.get(`/${user.role}/semesters`);
+                setSemesters(response.data);
+                const active = response.data.find((s) => s.isActive);
+                if (active) setSemesterId(active.id);
+            } catch (err) {
+                setError('Failed to load semesters');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSemesters();
+    }, [user]);
 
     const getStudentTypeLabel = (type) => {
         switch (type) {
@@ -92,7 +111,7 @@ export default function StudentConfig() {
         
         // Fetch available teachers
         try {
-            const response = await api.get(`/admin/teachers/slots?semesterId=${semesterId}`);
+            const response = await api.get(`/${user.role}/teachers/slots?semesterId=${semesterId}`);
             setAvailableTeachers(response.data);
             console.log('Available teachers:', response.data);
         } catch (error) {
@@ -149,7 +168,7 @@ export default function StudentConfig() {
                         alert('For specific topic assignment, you can only assign one student at a time.');
                         return;
                     }
-                    endpoint = '/admin/students/prethesis-assign-specific';
+                    endpoint = `/${user.role}/students/prethesis-assign-specific`;
                     assignmentData = {
                         studentId: selectedStudents[0],
                         topicId: selectedTopic,
@@ -164,7 +183,7 @@ export default function StudentConfig() {
                         alert('For specific teacher assignment, you can only assign one student at a time.');
                         return;
                     }
-                    endpoint = '/admin/students/thesis-assign-specific';
+                    endpoint = `/${user.role}/students/thesis-assign-specific`;
                     assignmentData = {
                         studentId: selectedStudents[0],
                         teacherId: selectedTeacher,
@@ -174,9 +193,9 @@ export default function StudentConfig() {
             } else {
                 // Random assignment - multiple students of same type
                 if (studentTypeFilter === 'pre-thesis') {
-                    endpoint = '/admin/students/prethesis-assign-random';
+                    endpoint = `/${user.role}/students/prethesis-assign-random`;
                 } else {
-                    endpoint = '/admin/students/thesis-assign-random';
+                    endpoint = `/${user.role}/students/thesis-assign-random`;
                 }
 
                 assignmentData = {
@@ -194,7 +213,7 @@ export default function StudentConfig() {
             setSelectedTopic('');
 
             // Refresh students list
-            const response = await api.get(`/admin/students?semester=${semesterId}`);
+            const response = await api.get(`/${user.role}/students?semester=${semesterId}`);
             setStudents(response.data);
 
         } catch (error) {
@@ -258,14 +277,14 @@ export default function StudentConfig() {
         }
         try {
             if (formMode === 'add') {
-                await api.post('/admin/students/new', formData);
+                await api.post(`/${user.role}/students/new`, formData);
             } else {
-                await api.put(`/admin/students/${editStudentId}/update`, formData);
+                await api.put(`/${user.role}/students/${editStudentId}/update`, formData);
             }
             setShowForm(false);
             setFormData({});
             // Refresh students
-            const response = await api.get(`/admin/students?semester=${semesterId}`);
+            const response = await api.get(`/${user.role}/students?semester=${semesterId}`);
             setStudents(response.data);
         } catch (error) {
             console.error(error);
@@ -284,7 +303,7 @@ export default function StudentConfig() {
     useEffect(() => {
         const fetchSemesters = async () => {
             try {
-                const response = await api.get('/admin/semesters');
+                const response = await api.get(`/${user.role}/semesters`);
                 setSemesters(response.data);
                 const active = response.data.find((s) => s.isActive);
                 if (active) setSemesterId(active.id);
@@ -302,7 +321,7 @@ export default function StudentConfig() {
         const fetchStudents = async () => {
             setLoading(true);
             try {
-                const response = await api.get(`/admin/students?semester=${semesterId}`);
+                const response = await api.get(`/${user.role}/students?semester=${semesterId}`);
                 setStudents(response.data);
                 setError(null);
                 console.log('Fetched students:', response.data);
@@ -324,7 +343,7 @@ export default function StudentConfig() {
                 semesterId
             ) {
                 try {
-                    const res = await api.get(`/admin/topics/available?semesterId=${semesterId}`);
+                    const res = await api.get(`/${user.role}/topics/available?semesterId=${semesterId}`);
                     setAvailableTopics(res.data);
                 } catch (err) {
                     setAvailableTopics([]);

@@ -32,9 +32,10 @@ const SemesterAssignment = () => {
 
     // Fetch initial data
     useEffect(() => {
+        if (!user || !user.role) return;
         fetchSemesters();
         fetchTeachers();
-    }, []);
+    }, [user]);
 
     // Auto-select newest semester and fetch assigned teachers
     useEffect(() => {
@@ -55,7 +56,7 @@ const SemesterAssignment = () => {
 
     const fetchSemesters = async () => {
         try {
-            const response = await api.get('/admin/semesters');
+            const response = await api.get(`/${user.role}/semesters`);
             // Process semesters to extract dates from configurations
             const processedSemesters = (response.data || []).map(semester => {
                 const startDateConfig = semester.configurations?.find(config => config.key.includes('start_date'));
@@ -77,7 +78,7 @@ const SemesterAssignment = () => {
 
     const fetchTeachers = async () => {
         try {
-            const response = await api.get('/admin/teachers');
+            const response = await api.get(`/${user.role}/teachers/active`);
             setTeachers(response.data || []);
         } catch (error) {
             console.error('Error fetching teachers:', error);
@@ -88,7 +89,7 @@ const SemesterAssignment = () => {
     const fetchAssignedTeachers = async (semesterId) => {
         try {
             setLoading(true);
-            const response = await api.get(`/admin/semesters/${semesterId}/teachers`);
+            const response = await api.get(`/${user.role}/semesters/${semesterId}/teachers`);
             const assigned = response.data || [];
             setAssignedTeachers(assigned);
             
@@ -116,7 +117,7 @@ const SemesterAssignment = () => {
 
         try {
             setLoading(true);
-            await api.post(`/admin/semesters/${selectedSemester}/teachers/assign-multiple`, {
+            await api.post(`/${user.role}/semesters/${selectedSemester}/teachers/assign-multiple`, {
                 teacherIds: selectedTeachers,
                 maxPreThesisSlots: slotConfig.maxPreThesisSlots,
                 maxThesisSlots: slotConfig.maxThesisSlots
@@ -150,7 +151,7 @@ const SemesterAssignment = () => {
     const updateTeacherSlots = async () => {
         try {
             setLoading(true);
-            await api.put(`/admin/semesters/${selectedSemester}/teachers/${editingTeacher.id}/slots`, {
+            await api.put(`/${user.role}/semesters/${selectedSemester}/teachers/${editingTeacher.id}/slots`, {
                 maxPreThesisSlots: editSlotConfig.maxPreThesisSlots,
                 maxThesisSlots: editSlotConfig.maxThesisSlots
             });
@@ -171,18 +172,33 @@ const SemesterAssignment = () => {
     };
 
     const unassignTeacher = async (teacherId) => {
+        if (!window.confirm('Are you sure you want to unassign this teacher from the semester?')) {
+            return;
+        }
+
         try {
             setLoading(true);
-            await api.delete(`/admin/semesters/${selectedSemester}/teachers/${teacherId}/unassign`);
-            
+            setError(""); // Clear previous errors
+            await api.delete(`/${user.role}/semesters/${selectedSemester}/teachers/${teacherId}/unassign`);
+
             setSuccess('Teacher unassigned successfully');
             fetchAssignedTeachers(selectedSemester);
             
             setTimeout(() => setSuccess(""), 3000);
         } catch (error) {
             console.error('Error unassigning teacher:', error);
-            setError('Failed to unassign teacher');
-            setTimeout(() => setError(""), 3000);
+            console.log('Error response:', error.response); // Debug log
+
+            // Extract the specific error message from the response
+            const errorMessage = error.response?.data?.error || 
+                               error.response?.data?.message || 
+                               'Failed to unassign teacher';
+            
+            console.log('Setting error message:', errorMessage); // Debug log
+            setError(errorMessage);
+
+            alert(`Error: ${errorMessage}`);
+            setTimeout(() => setError(""), 5000); // Extended to 5 seconds
         } finally {
             setLoading(false);
         }
@@ -215,7 +231,7 @@ const SemesterAssignment = () => {
     );
 
     // Check if user is admin
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'moderator') {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">

@@ -14,10 +14,12 @@ export default function TeacherSidebar() {
         (a, b) => new Date(b.startDate) - new Date(a.startDate)
     );
 
+    console.log("Sorted Semesters:", sortedSemesters);
+
     return (
         <div className="teacher-sidebar">
             <div className="sidebar-content">
-                {sortedSemesters && sortedSemesters.length > 0 ? (
+                {sortedSemesters && sortedSemesters.length > 0 && (
                     sortedSemesters.map((sem, idx) => (
                         <div className="section" key={sem.id || idx}>
                             <div
@@ -71,8 +73,6 @@ export default function TeacherSidebar() {
                             )}
                         </div>
                     ))
-                ) : (
-                    <div>No semester data available.</div>
                 )}
             </div>
         </div>

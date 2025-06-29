@@ -19,11 +19,11 @@ const PreThesisManagement = () => {
 
     const [exportingPreThesis, setExportingPreThesis] = useState(null);
 
-    // Fetch initial data
     useEffect(() => {
-        fetchSemesters();
+        if (!user || !user.role) return;
         fetchActiveTeachers();
-    }, []);
+        fetchSemesters();
+    }, [user]);
 
     // Auto-select newest semester
     useEffect(() => {
@@ -51,7 +51,7 @@ const PreThesisManagement = () => {
             // Find semester for filename (optional, if you want to include semester name)
             const semester = semesters.find(s => s.id.toString() === selectedSemester);
 
-            const response = await api.get(`/admin/prethesis/${preThesis.id}/export-final`, {
+            const response = await api.get(`/${user.role}/prethesis/${preThesis.id}/export-final`, {
                 responseType: 'blob'
             });
             console.log('Exporting pre-thesis final report:', response);
@@ -79,7 +79,7 @@ const PreThesisManagement = () => {
 
     const fetchSemesters = async () => {
         try {
-            const response = await api.get('/admin/semesters');
+            const response = await api.get(`/${user.role}/semesters`);
             const processedSemesters = (response.data || []).map(semester => {
                 const startDateConfig = semester.configurations?.find(config => config.key.includes('start_date'));
                 const endDateConfig = semester.configurations?.find(config => config.key.includes('end_date'));
@@ -97,7 +97,7 @@ const PreThesisManagement = () => {
 
     const fetchActiveTeachers = async () => {
         try {
-            const response = await api.get('/admin/teachers/active');
+            const response = await api.get(`/${user.role}/teachers/active`);
             setActiveTeachers(response.data || []);
         } catch (error) {
             setError('Failed to fetch active teachers');
@@ -108,7 +108,7 @@ const PreThesisManagement = () => {
         try {
             setLoading(true);
             // Get all topics for this semester
-            const preThesesRes = await api.get('/admin/prethesis', { params: { semesterId } });
+            const preThesesRes = await api.get(`/${user.role}/prethesis`, { params: { semesterId } });
             const preThesesData = preThesesRes.data || [];
 
             // Map pre-thesis to student/preThesisTopic/supervisor
@@ -155,7 +155,7 @@ const PreThesisManagement = () => {
         pt.supervisor?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'moderator') {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">

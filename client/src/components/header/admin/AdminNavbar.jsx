@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import AccountDropdown from "./AccountDropdown";
 import NotificationDropdown from "./NotificationDropdown";
+import api from "@/utils/axios";
 
 export default function AdminNavbar({ toggleSidebar }) {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -16,9 +17,8 @@ export default function AdminNavbar({ toggleSidebar }) {
       const fetchNotifications = async () => {
           try {
               const response = await api.get('/admin/notifications');
-              setNotifications(response.data);
-              const unread = response.data.filter(n => !n.isRead).length;
-              setUnreadCount(unread);
+              setNotifications(response.data.notifications); // Access nested notifications
+              setUnreadCount(response.data.unreadCount); // Access nested unreadCount
           } catch (error) {
               setNotifications([]);
               setUnreadCount(0);

@@ -14,7 +14,9 @@ export default function TopicList() {
     const [approvedTopic, setApprovedTopic] = useState(null);
     const [appliedTopics, setAppliedTopics] = useState([]);
     const [topic, setTopic] = useState(null);
-
+    const [error, setError] = useState("");
+    const [isStudentActive, setIsStudentActive] = useState(true);
+    
     useEffect(() => {
         fetchApplied();
         fetchTopics();
@@ -30,24 +32,47 @@ export default function TopicList() {
                 setApprovedTopic(response.data.approvedTopic.approvedTopic);
                 setTopic(response.data.approvedTopic.topic);
             }
+            setIsStudentActive(true);
+            setError("");
         } catch (error) {
             if (error.response && error.response.status === 404) {
-                setAppliedTopics([]);
-                setApprovedTopic(null);
+                const errorMessage = error.response?.data?.error || error.response?.data?.message;
+                if (errorMessage && errorMessage.toLowerCase().includes('student not active')) {
+                    setIsStudentActive(false);
+                    setError("Student not active. Please contact administration to activate your account.");
+                } else {
+                    setAppliedTopics([]);
+                    setApprovedTopic(null);
+                }
             } else {
                 console.error("Error fetching applied topic:", error);
+                setError("Failed to load applied topics");
             }
         } finally {
             setTopicLoading(false);
         }
     }
+
     const fetchTopics = async () => {
         try {
             const response = await api.get('/student/topic-list');
             setTopics(response.data.topics);
             setSemester(response.data.semester);
+            setIsStudentActive(true);
+            setError("");
         } catch (error) {
-            console.error("Error fetching topics:", error);
+            if (error.response && error.response.status === 404) {
+                const errorMessage = error.response?.data?.error || error.response?.data?.message;
+                if (errorMessage && errorMessage.toLowerCase().includes('student not active')) {
+                    setIsStudentActive(false);
+                    setError("Student not active. Please contact administration to activate your account.");
+                } else {
+                    setError("No topics available or semester not found");
+                }
+            } else {
+                console.error("Error fetching topics:", error);
+                setError("Failed to load topics");
+            }
         } finally {
             setTopicLoading(false);
         }
@@ -57,7 +82,62 @@ export default function TopicList() {
         return <div>Loading...</div>;
     }
 
+    // Show student not active message
+    if (!isStudentActive) {
+        return (
+            <div className="topic-container">
+                <div className="error-message" style={{
+                    backgroundColor: '#fee2e2',
+                    border: '1px solid #fecaca',
+                    color: '#dc2626',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    margin: '20px 0'
+                }}>
+                    <h2>Account Status: Inactive</h2>
+                    <p>{error}</p>
+                    <p>You cannot access topics or apply for thesis topics while your account is inactive.</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show other errors
+    if (error && isStudentActive) {
+        return (
+            <div className="topic-container">
+                <div className="error-message" style={{
+                    backgroundColor: '#fef3cd',
+                    border: '1px solid #fde68a',
+                    color: '#92400e',
+                    padding: '16px',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    margin: '20px 0'
+                }}>
+                    <p>{error}</p>
+                </div>
+            </div>
+        );
+    }
+
     const handleSubmit = async (topic) => {
+        // Validate title length
+        if (!title.trim()) {
+            alert("Pre-thesis title is required.");
+            return;
+        }
+        
+        if (title.length > 255) {
+            alert("Pre-thesis title must be 255 characters or less.");
+            return;
+        }
+        
+        if (!description.trim()) {
+            alert("Ideas/description is required.");
+            return;
+        }
         try {
             await api.post(`/student/apply-topic/${topic.id}`, { title, description });
             alert("Successfully applied for the topic!");
@@ -100,10 +180,10 @@ export default function TopicList() {
                 </div>
             )}
 
-
             {topics.length === 0 && !topicLoading && (
                 <div>No topics available for this semester.</div>
             )}
+            
             {approvedTopic && (
                 <div className="approved-info">
                     <h1>Approved Topic:</h1>
@@ -191,6 +271,8 @@ export default function TopicList() {
                     </table>
                 </div>
             )}
+            
+            {/* Modal remains the same */}
             {openModal && (
                 <div className="modal-overlay" onClick={() => { setOpenModal(false); setSelectedTopic(null); }}>
                     <div className="modal-form" onClick={e => e.stopPropagation()}>

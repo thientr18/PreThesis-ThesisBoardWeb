@@ -17,9 +17,8 @@ export default function TeacherNavbar({ toggleSidebar }) {
       const fetchNotifications = async () => {
           try {
               const response = await api.get('/teacher/notifications');
-              setNotifications(response.data);
-              const unread = response.data.filter(n => !n.isRead).length;
-              setUnreadCount(unread);
+              setNotifications(response.data.notifications); // Access nested notifications
+              setUnreadCount(response.data.unreadCount); // Access nested unreadCount
           } catch (error) {
               setNotifications([]);
               setUnreadCount(0);

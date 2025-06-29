@@ -28,12 +28,51 @@ class NotificationController {
         if (!recipientId) {
             return res.status(400).json({ error: 'Recipient ID is required' });
         }
+
         try {
-            const notifications = await Notification.find({ recipientId }).sort({ createdAt: -1 });
-            res.status(200).json(notifications);
+            const unreadCount = await Notification.countDocuments({ 
+                recipientId, 
+                isRead: false 
+            });
+            const notifications = await Notification.find({ recipientId })
+                .sort({ 
+                    isRead: 1,  // unread (false) comes first
+                    createdAt: -1 // newest first within each group
+                })
+                .limit(10); // Only return 10 newest;
+            
+            res.status(200).json({
+                notifications,
+                unreadCount
+            });
+            // res.status(200).json(notifications);
         } catch (error) {
             console.log(error)
             res.status(500).json({ error: 'Failed to fetch notifications' });
+        }
+    }
+
+    async getAllNotifications(req, res) {
+        const userId = req.user.id;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        const recipientId = userId;
+        if (!recipientId) {
+            return res.status(400).json({ error: 'Recipient ID is required' });
+        }
+        try {
+            const notifications = await Notification.find({ recipientId })
+                .sort({ 
+                    isRead: 1,  // unread (false) comes first
+                    createdAt: -1 // newest first within each group
+                });
+            
+            res.status(200).json(notifications);
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ error: 'Failed to fetch all notifications' });
         }
     }
 
@@ -70,6 +109,7 @@ class NotificationController {
                 return res.status(404).json({ error: 'Notification not found' });
             }
             notification.isRead = true;
+            notification.readAt = new Date(); // Add timestamp when read
             await notification.save();
             res.status(200).json(notification);
         } catch (error) {
@@ -77,8 +117,6 @@ class NotificationController {
             res.status(500).json({ error: 'Failed to read notification' });
         }
     }
-
-    
 }
 
 module.exports = new NotificationController();

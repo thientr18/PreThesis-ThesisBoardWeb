@@ -19,6 +19,10 @@ export default function NotificationDropdown({ notifications = [], setNotificati
         navigate(`/notifications/${id}`);
     };
 
+    const handleViewAll = () => {
+        navigate('/notifications');
+    };
+
     return (
         <div className="notification-dropdown">
             {notifications.length === 0 ? (
@@ -46,6 +50,16 @@ export default function NotificationDropdown({ notifications = [], setNotificati
                         </div>
                     </div>
                 ))
+            )}
+            {notifications.length > 0 && (
+                <div className="view-all-notifications">
+                    <button 
+                        className="view-all-btn"
+                        onClick={handleViewAll}
+                    >
+                        View All Notifications
+                    </button>
+                </div>
             )}
         </div>
     );

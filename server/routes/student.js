@@ -12,14 +12,16 @@ const {
 } = require("../app/utils/multer");
 
 router.get('/notifications', NotificationController.getNotifications);
+router.get('/notifications/all', NotificationController.getAllNotifications);
 router.patch('/notifications/:id/read', NotificationController.readNotifications);
 
 router.get('/profile/', StudentController.getProfile);
 
-router.get('/topic-list/', StudentController.getTopics);
 router.post('/apply-topic/:topicId', StudentController.applyTopic);
 router.get('/applied-topic', StudentController.getAppliedTopic);
 router.post('/cancel-topic/:topicId', StudentController.cancelTopic);
+router.get('/topic-list/', StudentController.getTopics);
+
 router.get('/pre-thesis/:semesterId', StudentController.getPreThesis);
 router.post('/pre-thesis/:preThesisId/submit-report', uploadPreThesisReportFile, StorageController.submitPreThesisReport);
 router.post('/pre-thesis/:preThesisId/submit-project', uploadPreThesisProjectFile, StorageController.submitPreThesisProject);
