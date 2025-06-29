@@ -11,22 +11,32 @@ router.put('/change-password', AdminController.changePassword);
 router.put('/profile/update', AdminController.updateProfile);
 router.get('/profile/', AdminController.getProfile);
 router.get('/semesters', AdminController.getSemesters);
+router.get('/topics/available', AdminController.getAvailablePreThesisTopics);
+
+router.get('/teachers/active', AdminController.getActiveTeachers);
+router.get('/semesters/:semesterId/theses', AdminController.getThesesBySemester);
+router.post('/theses/:thesisId/assign-reviewer', AdminController.assignReviewerToThesis);
+router.post('/theses/:thesisId/assign-committee', AdminController.assignCommitteeToThesis);
+router.post('/theses/:thesisId/set-defense-date', AdminController.setThesisDefenseDate);
+router.get('/theses/:thesisId/export-registration', AdminController.exportThesisRegistrationReport);
+router.get('/theses/:thesisId/export-final', AdminController.exportThesisFinalReport);
+router.get('/prethesis', AdminController.getPreThesesBySemester);
+router.get('/prethesis/:preThesisId/export-final', AdminController.exportPreThesisFinalReport);
 
 router.post('/students/new', AdminController.createStudent);
-// router.get('/students/:studentId', AdminController.getStudentById);
-router.get('/students/dashboard', AdminController.getStudentDashboard);
+router.post('/students/prethesis-assign-random', AdminController.assignPreThesisRandomly);
+router.post('/students/prethesis-assign-specific', AdminController.assignPreThesisToSpecificTopic);
+router.post('/students/thesis-assign-random', AdminController.assignThesisRandomly);
+router.post('/students/thesis-assign-specific', AdminController.assignThesisToSpecificTeacher);
 router.put('/students/:studentId/update', AdminController.updateStudent);
 router.get('/students', AdminController.getStudents);
 
 router.post('/teachers/new', AdminController.createTeacher);
-// router.get('/teachers/:teacherId', AdminController.getTeacherById);
-router.get('/teachers/dashboard', AdminController.getTeacherDashboard);
+router.get('/teachers/slots', AdminController.getTeachersWithSlots);
 router.put('/teachers/:teacherId/update', AdminController.updateTeacher);
 router.get('/teachers', AdminController.getTeachers);
 
 router.post('/moderators/new', AdminController.createModerator);
-// router.get('/moderators/:moderatorId', AdminController.getModeratorById);
-router.get('/moderators/dashboard', AdminController.getModeratorDashboard);
 router.put('/moderators/:moderatorId/update', AdminController.updateModerator);
 router.get('/moderators', AdminController.getModerators);
 

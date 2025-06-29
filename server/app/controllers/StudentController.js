@@ -279,36 +279,9 @@ class StudentController {
                         required: false,
                         order: [['submittedAt', 'DESC']],
                     },
-                    {
-                        model: models.PreThesisGrade,
-                        as: 'grades',
-                        required: false,
-                        include: [
-                            {
-                                model: models.Teacher,
-                                as: 'teacher',
-                                attributes: ['id', 'fullName', 'email', 'phone'],
-                            }
-                        ],
-                        order: [['createdAt', 'DESC']],
-                    }
                 ]
             });
             if (!preThesis) return res.status(404).json({ message: "No pre-thesis found" });
-
-                        const latestGrade = await models.PreThesisGrade.findOne({
-                where: {
-                    preThesisId: preThesis.id
-                },
-                include: [
-                    {
-                        model: models.Teacher,
-                        as: 'teacher',
-                        attributes: ['id', 'fullName', 'email', 'phone'],
-                    }
-                ],
-                order: [['createdAt', 'DESC']],
-            });
 
             // Get submission deadline
             const submissionDeadlineConfig = await Configuration.findOne({
@@ -341,10 +314,9 @@ class StudentController {
                 // Include submission counts for display
                 reportSubmissionCount: reportSubmissions.length,
                 projectSubmissionCount: projectSubmissions.length,
-                // Include grade information from PreThesisGrade table
-                grade: latestGrade ? latestGrade.grade : null,
-                feedback: latestGrade ? latestGrade.feedback : null,
-                gradedAt: latestGrade ? latestGrade.createdAt : null,
+                grade: preThesis.grade ? preThesis.grade : null,
+                feedback: preThesis.feedback ? preThesis.feedback : null,
+                gradedAt: preThesis.gradedAt ? preThesis.gradedAt : null,
                 // Include deadline information
                 submissionDeadline: submissionDeadline,
                 isSubmissionAllowed: isSubmissionAllowed
@@ -432,16 +404,10 @@ class StudentController {
                     studentId: s.id,
                     semesterId: semesterId,
                 },
-                attributes: ['id', 'studentId', 'supervisorId', 'semesterId', 'title', 'description', 'videoUrl', 'finalGrade', 'status'],
                 include: [
                     {
                         model: models.Student,
                         as: 'student',
-                        attributes: ['userId', 'fullName', 'email', 'phone'],
-                    },
-                    {
-                        model: models.Teacher,
-                        as: 'supervisor',
                         attributes: ['userId', 'fullName', 'email', 'phone'],
                     },
                     {
@@ -462,24 +428,27 @@ class StudentController {
                             }
                         ],
                         order: [['createdAt', 'DESC']],
-                    }
-                ]
-            });
-            if (!thesis) return res.status(404).json({ message: "No thesis found" });
-
-            const latestGrade = await models.ThesisGrade.findOne({
-                where: {
-                    thesisId: thesis.id
-                },
-                include: [
+                        attributes: ['gradeType', 'grade', 'feedback', 'createdAt']
+                    },
                     {
-                        model: models.Teacher,
-                        as: 'teacher',
-                        attributes: ['id', 'fullName', 'email', 'phone'],
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        attributes: ['role'],
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ]
                     }
                 ],
-                order: [['createdAt', 'DESC']],
+                attributes: [
+                    'id', 'title', 'description', 'status',
+                    'finalGrade', 'defenseDate', 'videoUrl'
+                ],
             });
+            if (!thesis) return res.status(404).json({ message: "No thesis found" });
 
             // Get submission deadline
             const submissionDeadlineConfig = await Configuration.findOne({
@@ -507,8 +476,15 @@ class StudentController {
                 ? presentationSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
                 : null;
 
+            const supervisor = thesis.thesisTeachers?.find(tt => tt.role === 'supervisor')?.teacher || null;
+            const reviewer = thesis.thesisTeachers?.find(tt => tt.role === 'reviewer')?.teacher || null;
+            const committee = thesis.thesisTeachers?.filter(tt => tt.role === 'committee').map(tt => tt.teacher) || [];
+            
             const thesisWithSubmissions = {
                 ...thesis.toJSON(),
+                supervisor: supervisor,
+                reviewer: reviewer,
+                committee: committee,
                 report: latestReportSubmission ? latestReportSubmission.fileUrl : null,
                 project: latestProjectSubmission ? latestProjectSubmission.fileUrl : null,
                 presentation: latestPresentationSubmission ? latestPresentationSubmission.fileUrl : null,
@@ -521,12 +497,13 @@ class StudentController {
                 projectSubmissionCount: projectSubmissions.length,
                 presentationSubmissionCount: presentationSubmissions.length,
                 // Include grade information from ThesisGrade table
-                finalGrade: latestGrade ? latestGrade.grade : null,
-                feedback: latestGrade ? latestGrade.feedback : null,
-                gradedAt: latestGrade ? latestGrade.createdAt : null,
+                finalGrade: thesis.finalGrade,
+                // Include Grades
+                grades: thesis.grades || [],
                 // Include deadline information
                 submissionDeadline: submissionDeadline,
-                isSubmissionAllowed: isSubmissionAllowed
+                isSubmissionAllowed: isSubmissionAllowed,
+                defenseDate: thesis.defenseDate,
             }
 
             return res.status(200).json({ message: "Thesis fetched successfully", thesis: thesisWithSubmissions });

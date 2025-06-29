@@ -2,7 +2,6 @@ const sequelize = require('../configs/userDB');
 const Admin = require('./Admin');
 const Moderator = require('./Moderator');
 const PreThesis = require('./PreThesis');
-const PreThesisGrade = require('./PreThesisGrade');
 const PreThesisRegistration = require('./PreThesisRegistration');
 const PreThesisSubmission = require('./PreThesisSubmission');
 const Semester = require('./Semester');
@@ -13,6 +12,7 @@ const TeacherSemester = require('./TeacherSemester');
 const Thesis = require('./Thesis');
 const ThesisGrade = require('./ThesisGrade');
 const ThesisSubmission = require('./ThesisSubmission');
+const ThesisTeacher = require('./ThesisTeacher');
 const Topic = require('./Topic');
 const User = require('./User');
 
@@ -22,7 +22,6 @@ const models = {
   Semester,
   Student,
   PreThesis,
-  PreThesisGrade,
   PreThesisRegistration,
   PreThesisSubmission,
   StudentSemester,
@@ -31,6 +30,7 @@ const models = {
   Thesis,
   ThesisGrade,
   ThesisSubmission,
+  ThesisTeacher,
   Topic,
   User,
 };
@@ -40,7 +40,7 @@ const syncModels = async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connected!');
-    await sequelize.sync( );
+    await sequelize.sync();
     console.log('Database synced!');
   } catch (err) {
     console.error('Database connection or sync failed:', err);
@@ -55,10 +55,6 @@ User.hasOne(Admin, { foreignKey: 'userId', as: 'admin' });
 // Moderator and User
 Moderator.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasOne(Moderator, { foreignKey: 'userId', as: 'moderator' });
-
-// PreThesis and PreThesisGrade
-PreThesis.hasMany(PreThesisGrade, { foreignKey: 'preThesisId', as: 'grades' });
-PreThesisGrade.belongsTo(PreThesis, { foreignKey: 'preThesisId', as: 'preThesis' });
 
 // PreThesis and PreTheSubmission
 PreThesis.hasMany(PreThesisSubmission, { foreignKey: 'preThesisId', as: 'submissions' });
@@ -79,10 +75,6 @@ Student.hasMany(PreThesisRegistration, { foreignKey: 'studentId', as: 'preThesis
 // PreThesisRegistration and Topic
 PreThesisRegistration.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
 Topic.hasMany(PreThesisRegistration, { foreignKey: 'topicId', as: 'preThesisRegistrations' });
-
-// PreThesisGrade and Teacher
-PreThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
-Teacher.hasMany(PreThesisGrade, { foreignKey: 'teacherId', as: 'preThesisGrades' });
 
 // Student and User
 Student.belongsTo(User, { foreignKey: 'userId', as: 'user' });
@@ -112,21 +104,24 @@ ThesisGrade.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
 Thesis.belongsTo(Student, { foreignKey: 'studentId', as: 'student' });
 Student.hasMany(Thesis, { foreignKey: 'studentId', as: 'thesis' });
 
-// Thesis and Teacher
-Thesis.belongsTo(Teacher, { foreignKey: 'supervisorId', as: 'supervisor' });
-Teacher.hasMany(Thesis, { foreignKey: 'supervisorId', as: 'thesis' });
-
 // Thesis and Semester
 Thesis.belongsTo(Semester, { foreignKey: 'semesterId', as: 'semester' });
 Semester.hasMany(Thesis, { foreignKey: 'semesterId', as: 'thesis' });
 
-// ThesisGrade and Teacher
-ThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
-Teacher.hasMany(ThesisGrade, { foreignKey: 'teacherId', as: 'thesisGrades' });
-
 // Thesis and ThesisSubmission
 ThesisSubmission.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
 Thesis.hasMany(ThesisSubmission, { foreignKey: 'thesisId', as: 'submissions' });
+
+// Add new ThesisTeacher associations
+Thesis.hasMany(ThesisTeacher, { foreignKey: 'thesisId', as: 'thesisTeachers' });
+ThesisTeacher.belongsTo(Thesis, { foreignKey: 'thesisId', as: 'thesis' });
+
+Teacher.hasMany(ThesisTeacher, { foreignKey: 'teacherId', as: 'thesisTeachers' });
+ThesisTeacher.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+
+// ThesisGrade and Teacher
+ThesisGrade.belongsTo(Teacher, { foreignKey: 'teacherId', as: 'teacher' });
+Teacher.hasMany(ThesisGrade, { foreignKey: 'teacherId', as: 'thesisGrades' });
 
 // Topic and Teacher
 Topic.belongsTo(Teacher, { foreignKey: 'supervisorId', as: 'supervisor' });

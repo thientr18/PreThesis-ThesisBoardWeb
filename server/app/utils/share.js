@@ -285,7 +285,7 @@ module.exports = {
 
             const students = await models.StudentSemester.findAll({
                 where: { semesterId },
-                attributes: ['studentId', 'semesterId', 'type'],
+                attributes: ['studentId', 'semesterId', 'type', 'isRegistered'],
                 include: {
                     model: models.Student,
                     as: 'student',

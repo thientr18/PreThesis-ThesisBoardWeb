@@ -44,12 +44,16 @@ const PreThesisHome = () => {
         try {
             setGradingLoading(true);
             const response = await api.get(`/teacher/pre-thesis/${preThesisId}/grade`);
-            if (response.data.grade) {
-                setExistingGrade(response.data.grade);
-                setGrade(response.data.grade.grade.toString());
-                setFeedback(response.data.grade.feedback || '');
+            if (typeof response.data.grade !== 'undefined') {
+                // Map backend response to expected object structure
+                setExistingGrade({
+                    grade: response.data.grade,
+                    feedback: response.data.feedback || '',
+                    updatedAt: response.data.updatedAt || new Date(), // fallback if not provided
+                });
+                setGrade(response.data.grade.toString());
+                setFeedback(response.data.feedback || '');
             }
-            
             // Set semester info and grading permission
             if (response.data.semester) {
                 setSemesterInfo(response.data.semester);

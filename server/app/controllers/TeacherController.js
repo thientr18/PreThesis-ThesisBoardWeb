@@ -11,38 +11,42 @@ class TeacherController {
             const teacher = await share.getTeacherById(teacherId);
             if (!teacher) return res.status(404).json({ message: "Teacher not found" });
 
-            
+            // Lấy semester active
             const activeSemester = await models.Semester.findOne({
                 where: { isActive: true }
             });
 
-            const currentSemester = await models.Semester.findOne({
-                where: { isCurrent: true }
+            // Lấy các semesterId mà giáo viên có mặt trong TeacherSemester hoặc ThesisTeacher
+            const preThesisSemesters = await models.TeacherSemester.findAll({
+                where: { teacherId: teacher.id },
+                attributes: ['semesterId']
+            });
+            const thesisSemesters = await models.ThesisTeacher.findAll({
+                where: { teacherId: teacher.id },
+                include: [{
+                    model: models.Thesis,
+                    as: 'thesis',
+                    attributes: ['semesterId']
+                }]
             });
 
-            let enrolled = [];
+            // Lấy tất cả semesterId
+            const semesterIds = [
+                ...preThesisSemesters.map(ts => ts.semesterId),
+                ...thesisSemesters.map(tt => tt.thesis?.semesterId).filter(Boolean)
+            ];
+            // Loại bỏ trùng lặp
+            const uniqueSemesterIds = [...new Set(semesterIds)];
 
-            if ( activeSemester.id === currentSemester.id ) {
-                enrolled = [currentSemester]
-            } else {
-                enrolled = [activeSemester, currentSemester]
-            }
-
-            const semesters = await models.TeacherSemester.findAll({
+            // Lấy thông tin semester
+            const semesters = await models.Semester.findAll({
                 where: {
-                    teacherId: teacher.id,
-                    semesterId: enrolled.map(t => t.id)
+                    id: uniqueSemesterIds,
+                    isActive: true // chỉ lấy semester đang active
                 },
-                include: [
-                    {
-                        model: Semester,
-                        as: 'semester',
-                        attributes: ['name', 'isCurrent', 'isActive'],
-                    }
-                ],
-                attributes: ['teacherId', 'semesterId']
-            })
-            return res.status(200).json({ teacher, semesters});
+            });
+
+            return res.status(200).json({ teacher, semesters });
         } catch (error) {
             console.error('Error fetching teacher:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -69,8 +73,9 @@ class TeacherController {
                     semesterId: semester.id
                 }
             });
-            if (!teacher) return res.status(404).json({ message: "Teacher semester not found" });
-
+            if (!teacher) {
+                return res.status(404).json({ message: 'Teacher not in the semester' });
+            }
             const topics = await share.getTopicsByTeacherId(teacher.teacherId, teacher.semesterId);
             if (!topics) return res.status(404).json({ message: "Topics not found", teacher, semester });
             if (topics.length === 0) return res.status(200).json({ message: "Topics fetched successfully", topics: topics || [], teacher, semester });
@@ -103,7 +108,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
             if (teacher.remainingPreThesisSlots <= 0) {
                 return res.status(400).json({ message: 'No remaining slots available' });
@@ -172,7 +177,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
             if (maximumSlots <= 0) {
                 return res.status(400).json({ message: 'Maximum slots must be greater than 0' });
@@ -254,7 +259,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
 
             const topics = await share.getTopicsByTeacherId(teacher.teacherId, teacher.semesterId);
@@ -306,7 +311,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
 
             const registration = await models.PreThesisRegistration.findOne({
@@ -456,7 +461,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
 
             const registration = await models.PreThesisRegistration.findOne({
@@ -517,7 +522,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
 
             const topics = await share.getTopicsByTeacherId(teacher.teacherId, teacher.semesterId);
@@ -731,8 +736,6 @@ class TeacherController {
                 scope: 'semester'
             });
 
-            console.log('End date config:', endDateConfig);
-
             if (!endDateConfig || !endDateConfig.value) {
                 return res.status(400).json({ 
                     message: "Semester end date not configured. Please contact administrator." 
@@ -748,40 +751,7 @@ class TeacherController {
                     message: `Grading period has ended. Semester "${semester.name}" ended on ${semesterEndDate.toDateString()}` 
                 });
             }
-
-            // Check if grade already exists
-            const existingGrade = await models.PreThesisGrade.findOne({
-                where: {
-                    preThesisId: preThesis.id,
-                    teacherId: t.id
-                }
-            });
-
-            if (existingGrade) {
-                // Update existing grade
-                await models.PreThesisGrade.update(
-                    {
-                        grade: grade,
-                        feedback: feedback || null
-                    },
-                    {
-                        where: {
-                            id: existingGrade.id
-                        },
-                        transaction
-                    }
-                );
-            } else {
-                // Create new grade
-                await models.PreThesisGrade.create({
-                    preThesisId: preThesis.id,
-                    teacherId: t.id,
-                    grade: grade,
-                    feedback: feedback || null
-                }, { transaction });
-            }
-
-            // Update pre-thesis status based on grade
+            
             let newStatus = preThesis.status;
             if (grade >= 50) {
                 newStatus = 'approved';
@@ -790,8 +760,16 @@ class TeacherController {
             }
 
             await models.PreThesis.update(
-                { status: newStatus },
-                { where: { id: preThesis.id }, transaction }
+                {
+                    grade: grade,
+                    feedback: feedback || null,
+                    gradedAt: new Date(),
+                    status: newStatus
+                },
+                {
+                    where: { id: preThesis.id },
+                    transaction
+                }
             );
 
             // Get student for notification
@@ -811,6 +789,7 @@ class TeacherController {
             return res.status(200).json({ 
                 message: "Pre-thesis graded successfully",
                 grade: grade,
+                feedback: feedback || null,
                 status: newStatus,
                 semesterEndDate: semesterEndDate
             });
@@ -878,22 +857,17 @@ class TeacherController {
                 canGrade = currentDate <= semesterEndDate;
             }
 
-            // Get existing grade
-            const grade = await models.PreThesisGrade.findOne({
-                where: {
-                    preThesisId: preThesis.id,
-                    teacherId: t.id
-                }
-            });
-
             return res.status(200).json({ 
                 message: "Grade fetched successfully",
-                grade: grade,
+                grade: preThesis.grade,
                 semester: {
                     id: semester.id,
                     name: semester.name,
                     endDate: semesterEndDate
                 },
+                feedback: preThesis.feedback,
+                status: preThesis.status,
+                gradedAt: preThesis.gradedAt,
                 canGrade: canGrade
             });
 
@@ -902,6 +876,7 @@ class TeacherController {
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
+    
     async assignThesis(req, res) {
         const transaction = await sequelize.transaction();
         const userId = req.user.id;
@@ -929,7 +904,7 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
             if (teacher.remainingThesisSlots <= 0) {
                 return res.status(400).json({ message: 'No remaining slots available' });
@@ -959,7 +934,6 @@ class TeacherController {
 
             const thesis = await models.Thesis.create({
                 studentId,
-                supervisorId: teacher.teacherId,
                 semesterId: semester.id,
                 title,
                 description,
@@ -980,9 +954,14 @@ class TeacherController {
                 );
             }
 
+            await models.ThesisTeacher.create({
+                thesisId: thesis.id,
+                teacherId: teacher.teacherId,
+                role: 'supervisor'
+            }, { transaction });
+
             const thesisStudents = await models.Thesis.findAll({
                 where: {
-                    supervisorId: teacher.teacherId,
                     semesterId: semester.id
                 },
                 include: [
@@ -1037,12 +1016,12 @@ class TeacherController {
                 }
             });
             if (!teacher) {
-                return res.status(404).json({ message: 'Teacher not found' });
+                return res.status(404).json({ message: 'Teacher not in the semester' });
             }
 
+            // Find theses where this teacher is the supervisor
             const thesisStudents = await models.Thesis.findAll({
                 where: {
-                    supervisorId: teacher.teacherId,
                     semesterId: semester.id
                 },
                 include: [
@@ -1055,6 +1034,22 @@ class TeacherController {
                                 model: models.User,
                                 as: 'user',
                                 attributes: ['username'],
+                            }
+                        ]
+                    },
+                    {
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: {
+                            teacherId: t.id,
+                            role: 'supervisor'
+                        },
+                        required: true,
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
                             }
                         ]
                     }
@@ -1083,6 +1078,57 @@ class TeacherController {
                 ]
             });
             return res.status(200).json({ message: "Thesis students fetched successfully", thesisStudents, notRegisteredStudents, semester });
+        } catch (error) {
+            console.error('Error fetching thesis students:', error);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
+
+    async getThesisBelongingsToTeacher(req, res) {
+        const userId = req.user.id;
+        try {
+            const t = await models.Teacher.findOne({
+                where: { userId: userId }
+            });
+            if (!t) return res.status(404).json({ message: "Teacher not found" });
+            if (t.status !== 'active') return res.status(404).json({ message: "Teacher not active" });
+
+            const semester = await models.Semester.findOne({
+                where: { isActive: true },
+                attributes: ['id', 'name']
+            });
+            if (!semester) return res.status(404).json({ message: "Active semester not found" });
+
+            const thesisStudents = await models.Thesis.findAll({
+                where: {
+                    semesterId: semester.id
+                },
+                include: [
+                    {
+                        model: models.Student,
+                        as: 'student',
+                        attributes: ['id', 'fullName'],
+                        include: [
+                            {
+                                model: models.User,
+                                as: 'user',
+                                attributes: ['username'],
+                            }
+                        ]
+                    },
+                    {
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: {
+                            teacherId: t.id
+                        },
+                        attributes: ['role'],
+                        required: true,
+                    }
+                ],
+            });
+
+            return res.status(200).json({ message: "Thesis students fetched successfully", thesisStudents, semester });
         } catch (error) {
             console.error('Error fetching thesis students:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -1168,7 +1214,7 @@ class TeacherController {
         }
     }
 
-    async getThesis(req, res) {
+async getThesis(req, res) {
         const userId = req.user.id;
         const thesisId = req.params.thesisId;
         try {
@@ -1201,18 +1247,54 @@ class TeacherController {
                         ]
                     },
                     {
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'email', 'phone'],
+                            }
+                        ],
+                        attributes: ['role']
+                    },
+                    {
                         model: models.ThesisSubmission,
                         as: 'submissions',
                         required: false,
                         order: [['submittedAt', 'DESC']],
                     }
                 ],
-                attributes: ['id', 'studentId', 'supervisorId', 'semesterId', 'title', 'description', 'videoUrl', 'status'],
+                attributes: ['id', 'studentId', 'semesterId', 'title', 'description', 'videoUrl', 'status', 'defenseDate', 'createdAt', 'finalGrade'],
             });
 
             if (!thesis) {
                 return res.status(404).json({ message: "Thesis not found" });
             }
+            // if teacher is not supervisor or reviewer or committee member, deny access
+            if (!thesis.thesisTeachers || thesis.thesisTeachers.length === 0) {
+                return res.status(403).json({ message: "Access denied" });
+            }
+            
+            const thesisTeacher = thesis.thesisTeachers.find(tt => tt.teacher.id === t.id);
+            if (!thesisTeacher) {
+                return res.status(403).json({ message: "Access denied" });
+            }
+
+            // Get all grades for this thesis
+            const allGrades = await models.ThesisGrade.findAll({
+                where: {
+                    thesisId: thesis.id
+                },
+                include: [
+                    {
+                        model: models.Teacher,
+                        as: 'teacher',
+                        attributes: ['id', 'fullName']
+                    }
+                ],
+                order: [['createdAt', 'DESC']]
+            });
 
             // Process submissions for all types
             const submissions = thesis.submissions || [];
@@ -1230,6 +1312,47 @@ class TeacherController {
                 ? presentationSubmissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] 
                 : null;
 
+            // Calculate final grade
+            let finalGrade = null;
+            let gradeBreakdown = {};
+            
+            if (allGrades.length > 0) {
+                // Group grades by type
+                const supervisorGrades = allGrades.filter(g => g.gradeType === 'supervisor');
+                const reviewerGrades = allGrades.filter(g => g.gradeType === 'reviewer');
+                const committeeGrades = allGrades.filter(g => g.gradeType === 'committee');
+
+                // Calculate averages for each type
+                const avgSupervisor = supervisorGrades.length > 0 
+                    ? supervisorGrades.reduce((sum, g) => sum + g.grade, 0) / supervisorGrades.length 
+                    : 0;
+                const avgReviewer = reviewerGrades.length > 0 
+                    ? reviewerGrades.reduce((sum, g) => sum + g.grade, 0) / reviewerGrades.length 
+                    : 0;
+                const avgCommittee = committeeGrades.length > 0 
+                    ? committeeGrades.reduce((sum, g) => sum + g.grade, 0) / committeeGrades.length 
+                    : 0;
+
+                gradeBreakdown = {
+                    supervisor: { average: avgSupervisor, count: supervisorGrades.length },
+                    reviewer: { average: avgReviewer, count: reviewerGrades.length },
+                    committee: { average: avgCommittee, count: committeeGrades.length }
+                };
+
+                // Calculate final grade with weights (supervisor: 50%, reviewer: 30%, committee: 20%)
+                const totalWeight = (supervisorGrades.length > 0 ? 0.5 : 0) + 
+                                  (reviewerGrades.length > 0 ? 0.3 : 0) + 
+                                  (committeeGrades.length > 0 ? 0.2 : 0);
+                
+                if (totalWeight > 0) {
+                    finalGrade = (
+                        (avgSupervisor * (supervisorGrades.length > 0 ? 0.5 : 0)) +
+                        (avgReviewer * (reviewerGrades.length > 0 ? 0.3 : 0)) +
+                        (avgCommittee * (committeeGrades.length > 0 ? 0.2 : 0))
+                    ) / totalWeight;
+                }
+            }
+
             const thesisWithSubmissions = {
                 ...thesis.toJSON(),
                 report: latestReportSubmission ? latestReportSubmission.fileUrl : null,
@@ -1238,13 +1361,22 @@ class TeacherController {
                 reportSubmittedAt: latestReportSubmission ? latestReportSubmission.submittedAt : null,
                 projectSubmittedAt: latestProjectSubmission ? latestProjectSubmission.submittedAt : null,
                 presentationSubmittedAt: latestPresentationSubmission ? latestPresentationSubmission.submittedAt : null,
-                // Include submission counts for display
                 reportSubmissionCount: reportSubmissions.length,
                 projectSubmissionCount: projectSubmissions.length,
-                presentationSubmissionCount: presentationSubmissions.length
+                presentationSubmissionCount: presentationSubmissions.length,
+                grades: allGrades,
+                gradeBreakdown,
+                finalGrade: thesis.finalGrade,
             };
 
-            return res.status(200).json({ message: "Thesis fetched successfully", thesis: thesisWithSubmissions });
+            return res.status(200).json({ 
+                message: "Thesis fetched successfully", 
+                thesis: thesisWithSubmissions,
+                currentTeacher: {
+                    id: t.id,
+                    role: thesis.thesisTeachers.find(tt => tt.teacher.id === t.id)?.role || 'supervisor'
+                }
+            });
         } catch (error) {
             console.error('Error fetching thesis:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -1272,17 +1404,29 @@ class TeacherController {
                 return res.status(400).json({ message: 'Grade must be between 0 and 100' });
             }
 
-            // Find thesis and verify supervisor access
+            // Find thesis and verify teacher access through ThesisTeacher
             const thesis = await models.Thesis.findOne({
                 where: {
-                    id: thesisId,
-                    supervisorId: t.id
-                }
+                    id: thesisId
+                },
+                include: [
+                    {
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: {
+                            teacherId: t.id
+                        },
+                        required: true
+                    }
+                ]
             });
 
             if (!thesis) {
                 return res.status(404).json({ message: "Thesis not found or access denied" });
             }
+
+            // Get teacher's role
+            const teacherRole = thesis.thesisTeachers.find(tt => tt.teacherId === t.id)?.role || 'supervisor';
 
             // Get semester information
             const semester = await models.Semester.findByPk(thesis.semesterId, {
@@ -1291,6 +1435,18 @@ class TeacherController {
 
             if (!semester) {
                 return res.status(404).json({ message: "Semester not found" });
+            }
+
+            if (Date.now() < thesis.defenseDate && teacherRole === 'committee') {
+                return res.status(400).json({ 
+                    message: "Thesis cannot be graded before defense date." 
+                });
+            }
+
+            if (teacherRole === 'committee' && !thesis.defenseDate) {
+                return res.status(400).json({ 
+                    message:  "Committee members can only grade after the defense date."
+                });
             }
 
             // Get semester end date from MongoDB configuration
@@ -1306,22 +1462,12 @@ class TeacherController {
                 });
             }
 
-            // Check if semester end date has passed
-            const currentDate = new Date();
-            const semesterEndDate = new Date(endDateConfig.value);
-            
-            if (currentDate > semesterEndDate) {
-                return res.status(400).json({ 
-                    message: `Grading period has ended. Semester "${semester.name}" ended on ${semesterEndDate.toDateString()}` 
-                });
-            }
-
             // Check if grade already exists
             const existingGrade = await models.ThesisGrade.findOne({
                 where: {
                     thesisId: thesis.id,
                     teacherId: t.id,
-                    gradeType: 'supervisor'
+                    gradeType: teacherRole
                 }
             });
 
@@ -1330,7 +1476,7 @@ class TeacherController {
                 await models.ThesisGrade.update(
                     {
                         grade: value,
-                        feedback: feedback || null
+                        feedback: feedback || null,
                     },
                     {
                         where: {
@@ -1344,10 +1490,73 @@ class TeacherController {
                 await models.ThesisGrade.create({
                     thesisId: thesis.id,
                     teacherId: t.id,
-                    gradeType: 'supervisor',
+                    gradeType: teacherRole,
                     grade: value,
                     feedback: feedback || null
                 }, { transaction });
+            }
+
+            // Fetch all assigned teachers and all grades again (to get the latest)
+            const allAssignedTeachers = await models.ThesisTeacher.findAll({
+                where: { thesisId: thesis.id },
+                attributes: ['teacherId', 'role'],
+                transaction
+            });
+            const allGrades = await models.ThesisGrade.findAll({
+                where: { thesisId: thesis.id },
+                attributes: ['teacherId', 'gradeType', 'grade'],
+                transaction
+            });
+
+            // Find assigned supervisor, reviewer, and committee members
+            const supervisor = allAssignedTeachers.find(t => t.role === 'supervisor');
+            const reviewer = allAssignedTeachers.find(t => t.role === 'reviewer');
+            const committeeMembers = allAssignedTeachers.filter(t => t.role === 'committee');
+
+            // Find grades for each
+            const supervisorGrade = supervisor
+                ? allGrades.find(g => g.gradeType === 'supervisor' && g.teacherId === supervisor.teacherId)
+                : null;
+            const reviewerGrade = reviewer
+                ? allGrades.find(g => g.gradeType === 'reviewer' && g.teacherId === reviewer.teacherId)
+                : null;
+
+            // Check all committee members have graded
+            const allCommitteeGraded = committeeMembers.length > 0 &&
+                committeeMembers.every(cm =>
+                    allGrades.some(g => g.gradeType === 'committee' && g.teacherId === cm.teacherId)
+                );
+
+            // Only generate final grade if all conditions are met
+            let finalGrade = null;
+            let thesisStatus = thesis.status;
+
+            if (supervisor && supervisorGrade && reviewer && reviewerGrade && allCommitteeGraded) {
+            // Collect all grades
+                const allFinalGrades = [
+                    supervisorGrade.grade,
+                    reviewerGrade.grade,
+                    ...committeeMembers.map(cm =>
+                        allGrades.find(g => g.gradeType === 'committee' && g.teacherId === cm.teacherId).grade
+                    )
+                ];
+
+                // Final grade: average of all grades
+                finalGrade = Math.round(
+                    (allFinalGrades.reduce((sum, g) => sum + g, 0) / allFinalGrades.length) * 100
+                ) / 100;
+
+                thesisStatus = finalGrade >= 50 ? 'complete' : 'failed';
+
+                await models.Thesis.update(
+                    { finalGrade, status: thesisStatus },
+                    { where: { id: thesis.id }, transaction }
+                );
+            } else {
+                await models.Thesis.update(
+                    { finalGrade: null, status: 'in-progress' },
+                    { where: { id: thesis.id }, transaction }
+                );
             }
 
             // Get student for notification
@@ -1360,14 +1569,13 @@ class TeacherController {
                 recipientId: student.userId,
                 type: 'alert',
                 title: 'Thesis Graded',
-                message: `Your thesis "${thesis.title}" has been graded: ${value}/100}`
+                message: `Your thesis "${thesis.title}" has been graded by ${teacherRole}: ${value}/100`
             });
 
             await transaction.commit();
             return res.status(200).json({ 
                 message: "Thesis graded successfully",
                 grade: value,
-                semesterEndDate: semesterEndDate
             });
 
         } catch (error) {
@@ -1387,17 +1595,29 @@ class TeacherController {
             });
             if (!t) return res.status(404).json({ message: "Teacher not found" });
 
-            // Find thesis and verify supervisor access
+            // Find thesis and verify teacher access through ThesisTeacher
             const thesis = await models.Thesis.findOne({
                 where: {
-                    id: thesisId,
-                    supervisorId: t.id
-                }
+                    id: thesisId
+                },
+                include: [
+                    {
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: {
+                            teacherId: t.id
+                        },
+                        required: true
+                    }
+                ]
             });
 
             if (!thesis) {
                 return res.status(404).json({ message: "Thesis not found or access denied" });
             }
+
+            // Get teacher's role
+            const teacherRole = thesis.thesisTeachers.find(tt => tt.teacherId === t.id)?.role || 'supervisor';
 
             // Get semester information
             const semester = await models.Semester.findByPk(thesis.semesterId, {
@@ -1423,13 +1643,13 @@ class TeacherController {
                 const currentDate = new Date();
                 canGrade = currentDate <= semesterEndDate;
             }
-
+            
             // Get existing grade
             const grade = await models.ThesisGrade.findOne({
                 where: {
                     thesisId: thesis.id,
                     teacherId: t.id,
-                    gradeType: 'supervisor'
+                    gradeType: teacherRole
                 }
             });
 
@@ -1453,7 +1673,8 @@ class TeacherController {
                     name: semester.name,
                     endDate: semesterEndDate
                 },
-                canGrade: canGrade
+                canGrade: canGrade,
+                teacherRole: teacherRole
             });
 
         } catch (error) {

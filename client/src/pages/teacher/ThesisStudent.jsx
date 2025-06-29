@@ -6,6 +6,9 @@ const ThesisStudent = () => {
     const { teacher, loading } = useTeacher();
     const [semester, setSemester] = useState(null);
     const [thesisStudents, setThesisStudents] = useState([]);
+    const [supervisedStudents, setSupervisedStudents] = useState([]);
+    const [reviewedStudents, setReviewedStudents] = useState([]);
+    const [committeeStudents, setCommitteeStudents] = useState([]);
     const [openModal, setOpenModal] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [description, setDescription] = useState("");
@@ -13,10 +16,27 @@ const ThesisStudent = () => {
 
     const fetchThesisStudents = async () => {
         try {
-            const response = await api.get('/teacher/thesis/assigned');
+            const response = await api.get('/teacher/thesis/belonging');
             console.log(response.data);
             setSemester(response.data.semester);
-            setThesisStudents(response.data.thesisStudents);
+            
+            const students = response.data.thesisStudents || [];
+            setThesisStudents(students);
+            
+            // Classify students based on teacher role
+            const supervised = students.filter(ts => 
+                ts.thesisTeachers?.some(tt => tt.role === 'supervisor')
+            );
+            const reviewed = students.filter(ts =>
+                ts.thesisTeachers?.some(tt => tt.role === 'reviewer')
+            );
+            const committee = students.filter(ts => 
+                ts.thesisTeachers?.some(tt => tt.role === 'committee')
+            );
+            
+            setSupervisedStudents(supervised);
+            setReviewedStudents(reviewed);
+            setCommitteeStudents(committee);
         } catch (error) {
             console.error("Error fetching thesis students:", error);
         }
@@ -28,7 +48,7 @@ const ThesisStudent = () => {
 
     const handleEditThesis = async (studentId) => {
         try {
-            const response = await api.post(`/teacher/thesis/assigned/${studentId}/update`, { title, description });
+            await api.post(`/teacher/thesis/assigned/${studentId}/update`, { title, description });
             fetchThesisStudents();
             setOpenModal(false);
             setSelectedStudent(null);
@@ -42,7 +62,7 @@ const ThesisStudent = () => {
 
     const handleDeleteThesis = async (thesisId) => {
         try {
-            const response = await api.delete(`/teacher/thesis/assigned/${thesisId}/delete`);
+            await api.delete(`/teacher/thesis/assigned/${thesisId}/delete`);
             fetchThesisStudents();
             setSelectedStudent(null);
             setTitle("");
@@ -56,7 +76,7 @@ const ThesisStudent = () => {
     if (loading) {
         return <div>Loading...</div>;
     }
-
+    
     return (
         <div className="thesis-student">
             {semester && (
@@ -65,9 +85,9 @@ const ThesisStudent = () => {
                 </div>
             )}
 
-            {thesisStudents.length > 0 && (
+            {supervisedStudents.length > 0 && (
                 <div className="assigned-students">
-                    <h1>Your Thesis Students</h1>
+                    <h1>Your Supervised Students</h1>
                     <table className="table">
                         <thead>
                             <tr>
@@ -76,7 +96,7 @@ const ThesisStudent = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {thesisStudents.map((ts) => (
+                            {supervisedStudents.map((ts) => (
                                 <tr key={ts.id}>
                                     <td><a href={`/teacher/thesis/${ts.id}`}>[{ts.student.user.username}][{ts.student.fullName}][{ts.title}]</a></td>
                                     <td>
@@ -90,6 +110,58 @@ const ThesisStudent = () => {
                                             <button onClick={() => {
                                                     handleDeleteThesis(ts.id);
                                             }}>Remove</button>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table> <br />
+                </div>
+            )}
+
+            {reviewedStudents.length > 0 && (
+                <div className="assigned-students">
+                    <h1>Reviewer for These Students</h1>
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Thesis</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {reviewedStudents.map((ts) => (
+                                <tr key={ts.id}>
+                                    <td><a href={`/teacher/thesis/${ts.id}`}>[{ts.student.user.username}][{ts.student.fullName}][{ts.title}]</a></td>
+                                    <td>
+                                        <ul>
+                                            <span>View Only</span>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+            <br />
+            {committeeStudents.length > 0 && (
+                <div className="assigned-students">
+                    <h1>Committee Member for These Students</h1>
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Thesis</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {committeeStudents.map((ts) => (
+                                <tr key={ts.id}>
+                                    <td><a href={`/teacher/thesis/${ts.id}`}>[{ts.student.user.username}][{ts.student.fullName}][{ts.title}]</a></td>
+                                    <td>
+                                        <ul>
+                                            <span>View Only</span>
                                         </ul>
                                     </td>
                                 </tr>

@@ -37,6 +37,9 @@ const seedDatabase = async () => {
       { username: 'student19', password: 'student19', role: 'student', status: 'active' },
       { username: 'student20', password: 'student20', role: 'student', status: 'active' },
       { username: 'moderator1', password: 'moderator1', role: 'moderator' },
+      { username: 'teacher3', password: 'teacher3', role: 'teacher', status: 'active' },
+      { username: 'teacher4', password: 'teacher4', role: 'teacher', status: 'active' },
+      { username: 'teacher5', password: 'teacher5', role: 'teacher', status: 'active' },
     ];
     const hashedAccounts = await Promise.all(
       accounts.map(async (account) => {
@@ -64,6 +67,9 @@ const seedDatabase = async () => {
     const teachers = await models.Teacher.bulkCreate([
       { userId: users[1].id, fullName: 'Teacher One', email: 'teacher1@example.com', phone: '0987654321', status: 'active' },
       { userId: users[2].id, fullName: 'Teacher Two', email: 'teacher2@example.com', phone: '0987654322', status: 'active' },
+      { userId: users[24].id, fullName: 'Teacher Three', email: 'teacher3@example.com', phone: '0987654323', status: 'active' },
+      { userId: users[25].id, fullName: 'Teacher Four', email: 'teacher4@example.com', phone: '0987654324', status: 'active' },
+      { userId: users[26].id, fullName: 'Teacher Five', email: 'teacher5@example.com', phone: '0987654325', status: 'active' }
     ]);
 
     // Insert Students
@@ -99,8 +105,6 @@ const seedDatabase = async () => {
         where: { isActive: true },
         defaults: {
             name: 'Fall 2025',
-            startDate: new Date(),
-            endDate: new Date(new Date().setMonth(new Date().getMonth() + 6)),
             isActive: true,
             isCurrent: true,
             allowView: true,
@@ -122,13 +126,12 @@ const seedDatabase = async () => {
     if (activeSemester[1]) {
         console.log('Creating new semester configurations...');
         const configurations = [
-            { key: `semester_name_${semesterId}`, name: 'Semester Name', value: activeSemester[0].name, scope: 'semester', semesterId },
-            { key: `start_date_${semesterId}`, name: 'Start Date', value: activeSemester[0].startDate, scope: 'semester', semesterId },
-            { key: `end_date_${semesterId}`, name: 'End Date', value: activeSemester[0].endDate, scope: 'semester', semesterId },
-            { key: `pre_thesis_registration_deadline_${semesterId}`, name: 'Pre-Thesis Registration Deadline', value: activeSemester[0].preThesisRegistrationDeadline || '', scope: 'semester', semesterId },
-            { key: `pre_thesis_submission_deadline_${semesterId}`, name: 'Pre-Thesis Submission Deadline', value: activeSemester[0].preThesisSubmissionDeadline || '', scope: 'semester', semesterId },
-            { key: `thesis_registration_deadline_${semesterId}`, name: 'Thesis Registration Deadline', value: activeSemester[0].thesisRegistrationDeadline || '', scope: 'semester', semesterId },
-            { key: `thesis_submission_deadline_${semesterId}`, name: 'Thesis Submission Deadline', value: activeSemester[0].thesisSubmissionDeadline || '', scope: 'semester', semesterId }
+            { key: `start_date_${semesterId}`, name: 'Start Date', value: new Date(), scope: 'semester', semesterId },
+            { key: `end_date_${semesterId}`, name: 'End Date', value: new Date(new Date().setMonth(new Date().getMonth() + 6)), scope: 'semester', semesterId },
+            { key: `pre_thesis_registration_deadline_${semesterId}`, name: 'Pre-Thesis Registration Deadline', value: new Date(), scope: 'semester', semesterId },
+            { key: `pre_thesis_submission_deadline_${semesterId}`, name: 'Pre-Thesis Submission Deadline', value: new Date(new Date().setMonth(new Date().getMonth() + 5)), scope: 'semester', semesterId },
+            { key: `thesis_registration_deadline_${semesterId}`, name: 'Thesis Registration Deadline', value: new Date(), scope: 'semester', semesterId },
+            { key: `thesis_submission_deadline_${semesterId}`, name: 'Thesis Submission Deadline', value: new Date(new Date().setMonth(new Date().getMonth() + 5)), scope: 'semester', semesterId }
         ];
 
         const savedConfigurations = await Configuration.insertMany(configurations);

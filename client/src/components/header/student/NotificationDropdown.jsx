@@ -16,7 +16,11 @@ export default function NotificationDropdown({ notifications = [], setNotificati
         } catch (error) {
             console.log(error);
         }
-        navigate(`/student/notifications/${id}`);
+
+        const notification = notifications.find(n => n._id === id);
+        navigate(`/notification/${id}`, {
+            state: { notification }
+        });
     };
 
     return (

@@ -1,23 +1,47 @@
 import React, { useState } from "react";
 
 export default function AdminSidebar() {
+  const  [studentOpen, setStudentOpen] = useState(false);
   const [teacherOpen, setTeacherOpen] = useState(false);
+  const toggleStudent = () => setStudentOpen((prev) => !prev);
   const toggleTeacher = () => setTeacherOpen((prev) => !prev);
 
   return (
     <div className="admin-sidebar">
       <div className="sidebar-content">
         <div className="section">
-          <div className="section-title">Applications</div>
-
-          <a href="/admin/student/config">
-            <button className="sidebar-btn">
+          <div className="section-title">Applications</div>          
+          <div>
+            <button className="sidebar-btn" onClick={toggleStudent}>
               <img src="/student-icon.svg" alt="student icon" className="icon" />
               <span>Student</span>
+              <img
+                src={studentOpen ? "/caret-up.svg" : "/caret-down.svg"}
+                alt="caret"
+                className="caret"
+              />
             </button>
-          </a>
 
-          {/* Make Teacher expandable */}
+          {studentOpen && (
+            <div className="sub-buttons">
+              <a href="/admin/student/management">
+                <button className="sidebar-btn submenu-btn">
+                  <span>Manage Students</span>
+                </button>
+              </a>
+              <a href="/admin/student/pre-thesis">
+                <button className="sidebar-btn submenu-btn">
+                  <span>Manage Pre-Theses</span>
+                </button>
+              </a>
+              <a href="/admin/student/thesis">
+                <button className="sidebar-btn submenu-btn">
+                  <span>Manage Theses</span>
+                </button>
+              </a>
+            </div>
+          )}
+          </div>
           <div>
             <button className="sidebar-btn" onClick={toggleTeacher}>
               <img src="/teacher.svg" alt="teacher icon" className="icon" />

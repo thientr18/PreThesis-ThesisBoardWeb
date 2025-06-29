@@ -5,7 +5,6 @@ import api from "@/utils/axios";
 
 const SemesterAssignment = () => {
     const { user } = useAuth();
-    const navigate = useNavigate();
     
     const [semesters, setSemesters] = useState([]);
     const [teachers, setTeachers] = useState([]);
@@ -57,7 +56,19 @@ const SemesterAssignment = () => {
     const fetchSemesters = async () => {
         try {
             const response = await api.get('/admin/semesters');
-            setSemesters(response.data || []);
+            // Process semesters to extract dates from configurations
+            const processedSemesters = (response.data || []).map(semester => {
+                const startDateConfig = semester.configurations?.find(config => config.key.includes('start_date'));
+                const endDateConfig = semester.configurations?.find(config => config.key.includes('end_date'));
+                
+                return {
+                    ...semester,
+                    startDate: startDateConfig?.value || null,
+                    endDate: endDateConfig?.value || null
+                };
+            });
+            
+            setSemesters(processedSemesters);
         } catch (error) {
             console.error('Error fetching semesters:', error);
             setError('Failed to fetch semesters');
@@ -79,17 +90,6 @@ const SemesterAssignment = () => {
             setLoading(true);
             const response = await api.get(`/admin/semesters/${semesterId}/teachers`);
             const assigned = response.data || [];
-            
-            // Add debugging to see what data we're receiving
-            console.log('Raw response from backend:', response.data);
-            console.log('Assigned teachers:', assigned);
-            
-            // Log each teacher's TeacherSemester data
-            assigned.forEach((teacher, index) => {
-                console.log(`Teacher ${index + 1}:`, teacher);
-                console.log(`TeacherSemester data:`, teacher.TeacherSemester);
-            });
-            
             setAssignedTeachers(assigned);
             
             // Filter available teachers (exclude assigned ones)

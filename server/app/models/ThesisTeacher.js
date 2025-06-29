@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const sequelize = require('../configs/dbConfig');
+const sequelize = require('../configs/userDB');
 const Teacher = require('./Teacher');
 const Thesis = require('./Thesis');
 
@@ -23,6 +23,7 @@ ThesisTeacher.init({
     },
     role: {
         type: DataTypes.ENUM('supervisor', 'reviewer', 'committee'),
+        primaryKey: true,
         allowNull: false,
         validate: {
             isIn: [['supervisor', 'reviewer', 'committee']]

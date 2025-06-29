@@ -1,6 +1,5 @@
 const { createNotification } = require('../services/notificationService');
 const Notification = require('../models/monongoDB/Notification');
-const { create } = require('../models/User');
 
 class NotificationController {
     async sendNotification(req, res) {
@@ -21,6 +20,10 @@ class NotificationController {
 
     async getNotifications(req, res) {
         const userId = req.user.id;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
         const recipientId = userId;
         if (!recipientId) {
             return res.status(400).json({ error: 'Recipient ID is required' });
@@ -31,6 +34,28 @@ class NotificationController {
         } catch (error) {
             console.log(error)
             res.status(500).json({ error: 'Failed to fetch notifications' });
+        }
+    }
+
+    async getNotificationById(req, res) {
+        const userId = req.user.id;
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+
+        const notificationId = req.params.id;
+        if (!notificationId) {
+            return res.status(400).json({ error: 'Notification ID is required' });
+        }
+        try {
+            const notification = await Notification.findById(notificationId);
+            if (!notification) {
+                return res.status(404).json({ error: 'Notification not found' });
+            }
+            res.status(200).json(notification);
+        } catch (error) {
+            console.log(error)
+            res.status(500).json({ error: 'Failed to fetch notification' });
         }
     }
 
@@ -52,6 +77,8 @@ class NotificationController {
             res.status(500).json({ error: 'Failed to read notification' });
         }
     }
+
+    
 }
 
 module.exports = new NotificationController();

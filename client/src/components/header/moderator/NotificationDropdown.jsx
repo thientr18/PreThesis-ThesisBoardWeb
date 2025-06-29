@@ -16,7 +16,7 @@ export default function NotificationDropdown({ notifications = [], setNotificati
         } catch (error) {
             console.log(error);
         }
-        navigate(`/moderator/notifications/${id}`);
+        navigate(`/notifications/${id}`);
     };
 
     return (

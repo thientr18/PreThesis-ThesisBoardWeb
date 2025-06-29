@@ -20,15 +20,6 @@ Thesis.init({
         allowNull: false,
         unique: false
     },
-    supervisorId: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Teacher,
-            key: 'id'
-        },
-        allowNull: false,
-        unique: false
-    },
     semesterId: {
         type: DataTypes.INTEGER,
         allowNull: false,

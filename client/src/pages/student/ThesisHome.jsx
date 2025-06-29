@@ -21,17 +21,11 @@ const ThesisHome = () => {
         gradedAt: null,
         submissionDeadline: null,
         isSubmissionAllowed: true,
-        supervisor: {
-            fullName: '',
-            email: '',
-            phone: ''
-        },
-        grades: [] // Add grades array to store multiple grades
-    });
-    const [teacher, setTeacher] = useState({
-        fullName: '',
-        email: '',
-        phone: ''
+        defenseDate: null,
+        supervisor: null,
+        reviewer: null,
+        committee: [],
+        grades: []
     });
     const [uploading, setUploading] = useState(false);
     const [uploadType, setUploadType] = useState('');
@@ -42,7 +36,9 @@ const ThesisHome = () => {
         try {
             const response = await api.get(`/student/thesis/${semesterId}`);
             const data = response.data.thesis;
-            setThesis({
+            
+            // Process grades and attach them to committee members
+            const processedData = {
                 ...data,
                 title: data.title || '',
                 description: data.description || '',
@@ -52,26 +48,51 @@ const ThesisHome = () => {
                 presentation: data.presentation || null,
                 demo: data.demo || null,
                 finalGrade: data.finalGrade || null,
-                feedback: data.feedback || null,
-                gradedAt: data.gradedAt || null,
                 submissionDeadline: data.submissionDeadline || null,
                 isSubmissionAllowed: data.isSubmissionAllowed !== false,
-                grades: data.grades || [] // Include all grades
-            });
+                defenseDate: data.defenseDate || null,
+                committee: data.committee || [],
+                grades: data.grades || []
+            };
 
-            const supervisor = data.supervisor;
-            setTeacher({
-                fullName: supervisor?.fullName || '',
-                email: supervisor?.email || '',
-                phone: supervisor?.phone || ''
-            });
+            // Attach grades to respective committee members
+            if (data.grades && data.grades.length > 0) {
+                data.grades.forEach(gradeInfo => {
+                    const teacherId = gradeInfo.teacher.id;
+                    const gradeData = {
+                        grade: gradeInfo.grade,
+                        feedback: gradeInfo.feedback,
+                        gradedAt: gradeInfo.createdAt
+                    };
 
+                    // Attach to supervisor
+                    if (processedData.supervisor && processedData.supervisor.id === teacherId) {
+                        processedData.supervisor = { ...processedData.supervisor, ...gradeData };
+                    }
+
+                    // Attach to reviewer
+                    if (processedData.reviewer && processedData.reviewer.id === teacherId) {
+                        processedData.reviewer = { ...processedData.reviewer, ...gradeData };
+                    }
+
+                    // Attach to committee members
+                    if (processedData.committee) {
+                        processedData.committee = processedData.committee.map(member => {
+                            if (member.id === teacherId) {
+                                return { ...member, ...gradeData };
+                            }
+                            return member;
+                        });
+                    }
+                });
+            }
+
+            setThesis(processedData);
             setDataLoaded(true);
         } catch (error) {
             console.error("Error fetching thesis data:", error);
         }
     };
-
     useEffect(() => {
         if (semesterId) {
             fetchThesis();
@@ -85,62 +106,16 @@ const ThesisHome = () => {
         
         const numericGrade = parseFloat(grade);
         if (numericGrade >= 85) {
-            return { text: `${grade}/100 (Excellent)`, color: '#28a745', icon: '🏆' };
+            return { text: `${grade}/100`, color: '#28a745', icon: '🏆' };
         } else if (numericGrade >= 70) {
-            return { text: `${grade}/100 (Good)`, color: '#17a2b8', icon: '👍' };
+            return { text: `${grade}/100`, color: '#17a2b8', icon: '👍' };
         } else if (numericGrade >= 60) {
-            return { text: `${grade}/100 (Satisfactory)`, color: '#ffc107', icon: '✓' };
+            return { text: `${grade}/100`, color: '#ffc107', icon: '✓' };
         } else if (numericGrade >= 50) {
-            return { text: `${grade}/100 (Pass)`, color: '#fd7e14', icon: '📝' };
+            return { text: `${grade}/100`, color: '#fd7e14', icon: '📝' };
         } else {
-            return { text: `${grade}/100 (Fail)`, color: '#dc3545', icon: '❌' };
+            return { text: `${grade}/100`, color: '#dc3545', icon: '❌' };
         }
-    };
-
-    const getGradeTypeIcon = (gradeType) => {
-        switch (gradeType) {
-            case 'supervisor':
-                return '👨‍🏫';
-            case 'reviewer':
-                return '👨‍💼';
-            case 'committee':
-                return '👥';
-            default:
-                return '📝';
-        }
-    };
-
-    const getGradeTypeLabel = (gradeType) => {
-        switch (gradeType) {
-            case 'supervisor':
-                return 'Supervisor Grade';
-            case 'reviewer':
-                return 'Reviewer Grade';
-            case 'committee':
-                return 'Committee Grade';
-            default:
-                return 'Grade';
-        }
-    };
-
-    const calculateFinalGrade = () => {
-        if (!thesis.grades || thesis.grades.length === 0) {
-            return null;
-        }
-
-        // If there's a final grade in the thesis record, use it
-        if (thesis.finalGrade !== null && thesis.finalGrade !== undefined) {
-            return thesis.finalGrade;
-        }
-
-        // Otherwise, calculate average of all grades
-        const validGrades = thesis.grades.filter(g => g.grade !== null && g.grade !== undefined);
-        if (validGrades.length === 0) {
-            return null;
-        }
-
-        const sum = validGrades.reduce((acc, grade) => acc + parseFloat(grade.grade), 0);
-        return (sum / validGrades.length).toFixed(2);
     };
 
     const getFileName = (filePath) => {
@@ -159,8 +134,6 @@ const ThesisHome = () => {
     
     const handleDownload = async (filePath, type) => {
         try {
-            console.log(`Downloading ${type} file from path:`, filePath);
-            
             // Extract just the filename from the full path
             const fileName = filePath.split('/').pop();
             
@@ -438,6 +411,11 @@ const ThesisHome = () => {
         }
     };
 
+    const formatDateTime = (dateString) => {    
+        if (!dateString) return 'Not set';
+        return new Date(dateString).toLocaleString();
+    };
+
     if (loading) {
         return <div className="thesis-home">Loading...</div>;
     }
@@ -446,34 +424,14 @@ const ThesisHome = () => {
         return <div className="thesis-home">No thesis data available.</div>;
     }
 
-    const finalGrade = calculateFinalGrade();
-
     return (
         <div className="dashboard-container">
             <h1>General Information</h1>
-            <div className="prethesis-info-stack">
-                <div className="prethesis-student-card">
-                    <h2 className="prethesis-card-title">Supervisor Info</h2>
-                    <table className="prethesis-info-table">
-                        <tbody>
-                            <tr>
-                                <td className="table-label">Full Name:</td>
-                                <td className="table-value" style={{ color: "#2096f2" }}>{teacher.fullName}</td>
-                            </tr>
-                            <tr>
-                                <td className="table-label">Email:</td>
-                                <td className="table-value" style={{ textTransform: "lowercase" }}>{teacher.email}</td>
-                            </tr>
-                            <tr>
-                                <td className="table-label">Phone:</td>
-                                <td className="table-value">{teacher.phone}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div className="prethesis-detail-card">
-                    <h2 className="prethesis-card-title">Thesis Details</h2>
-                    <table className="prethesis-info-table">
+            <div className="thesis-info-stack">
+                {/* Basic Thesis Details */}
+                <div className="thesis-detail-card">
+                    <h2 className="thesis-card-title">📋 Thesis Details</h2>
+                    <table className="thesis-info-table">
                         <tbody>
                             <tr>
                                 <td className="table-label">Title:</td>
@@ -486,6 +444,16 @@ const ThesisHome = () => {
                             <tr>
                                 <td className="table-label">Status:</td>
                                 <td className="table-value">{thesis.status}</td>
+                            </tr>
+                            <tr>
+                                <td className="table-label">Defense Date:</td>
+                                <td className="table-value">
+                                    {thesis.defenseDate ? (
+                                        <span style={{ color: "#28a745" }}>📅 {formatDateTime(thesis.defenseDate)}</span>
+                                    ) : (
+                                        <span style={{ color: "#6c757d" }}>⏳ Not scheduled yet</span>
+                                    )}
+                                </td>
                             </tr>
                             <tr>
                                 <td className="table-label">Report (Required):</td>
@@ -532,195 +500,275 @@ const ThesisHome = () => {
                 </div>
             </div>
 
-            {/* Grade Section */}
-            <h1>Grades & Feedback</h1>
-            <div className="prethesis-grade-card">
-                <h2 className="prethesis-card-title">Thesis Evaluation</h2>
-                <div className="grade-info-container">
-                    {/* Final Grade Display */}
-                    <div className="grade-display">
-                        <div className="grade-header">
-                            <h3>Final Grade</h3>
-                        </div>
-                        <div className="grade-value-container">
+            {/* Combined Committee & Grades Section */}
+            <h1>Committee Members & Evaluation</h1>
+            <div className="thesis-grade-card">
+                <h2 className="thesis-card-title">🏛️ Thesis Committee & Grades</h2>
+                
+                {/* Final Grade Display */}
+                <div className="final-grade-section">
+                    <div className="final-grade-card">
+                        <h3>🎯 Final Grade</h3>
+                        <div className="final-grade-display">
                             <span 
-                                className="grade-value" 
-                                style={{ color: getGradeDisplay(finalGrade).color }}
+                                className="final-grade-value" 
+                                style={{ color: getGradeDisplay(thesis.finalGrade).color }}
                             >
-                                {getGradeDisplay(finalGrade).icon} {getGradeDisplay(finalGrade).text}
+                                {getGradeDisplay(thesis.finalGrade).icon} {getGradeDisplay(thesis.finalGrade).text}
                             </span>
                             {thesis.gradedAt && (
                                 <small className="grade-date">
-                                    Last updated: {formatDateToVietnam(thesis.gradedAt)}
+                                    Last updated: {formatDateTime(thesis.gradedAt)}
                                 </small>
                             )}
                         </div>
                     </div>
-                    
-                    {/* Committee Members Information */}
-                    <div className="committee-info-section">
-                        <h4 className="committee-title">🏛️ Thesis Committee</h4>
-                        
-                        {/* Check if there are any committee members (reviewer or committee type) */}
-                        {thesis.grades && (thesis.grades.find(g => g.gradeType === 'reviewer') || thesis.grades.filter(g => g.gradeType === 'committee').length > 0) ? (
-                            <div className="committee-members-grid">
-                                {/* Reviewer Info - Show if reviewer has graded */}
-                                {thesis.grades.find(g => g.gradeType === 'reviewer') && (
-                                    <div className="committee-member-card reviewer">
-                                        <div className="member-header">
-                                            <span className="member-icon">👨‍💼</span>
-                                            <h5>Reviewer</h5>
-                                        </div>
-                                        <div className="member-info">
-                                            <p><strong>{thesis.grades.find(g => g.gradeType === 'reviewer').teacher.fullName}</strong></p>
-                                            <p>📧 {thesis.grades.find(g => g.gradeType === 'reviewer').teacher.email}</p>
-                                            <p>📞 {thesis.grades.find(g => g.gradeType === 'reviewer').teacher.phone}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Committee Members - Show all committee members who have graded */}
-                                {thesis.grades.filter(g => g.gradeType === 'committee').map((committeeGrade, index) => (
-                                    <div key={index} className="committee-member-card committee">
-                                        <div className="member-header">
-                                            <span className="member-icon">👥</span>
-                                            <h5>Committee Member {index + 1}</h5>
-                                        </div>
-                                        <div className="member-info">
-                                            <p><strong>{committeeGrade.teacher.fullName}</strong></p>
-                                            <p>📧 {committeeGrade.teacher.email}</p>
-                                            <p>📞 {committeeGrade.teacher.phone}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="no-committee-message">
-                                <div className="info-box">
-                                    <p>🏛️ No additional committee members have been assigned yet.</p>
-                                    <p>Your supervisor will coordinate the assignment of reviewer and committee members when your thesis is ready for evaluation.</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Individual Grades Display */}
-                    {thesis.grades && thesis.grades.length > 0 && (
-                        <div className="individual-grades-section">
-                            <h4 className="grades-title">📊 Detailed Grades</h4>
-                            <div className="grades-grid">
-                                {thesis.grades.map((gradeRecord, index) => (
-                                    <div key={index} className={`grade-card ${gradeRecord.gradeType}`}>
-                                        <div className="grade-card-header">
-                                            <span className="grade-type-icon">
-                                                {getGradeTypeIcon(gradeRecord.gradeType)}
-                                            </span>
-                                            <h5 className="grade-type-title">
-                                                {getGradeTypeLabel(gradeRecord.gradeType)}
-                                            </h5>
-                                        </div>
-                                        <div className="grade-card-content">
-                                            <div className="grade-value-display">
-                                                <span 
-                                                    className="individual-grade-value"
-                                                    style={{ color: getGradeDisplay(gradeRecord.grade).color }}
-                                                >
-                                                    {getGradeDisplay(gradeRecord.grade).text}
-                                                </span>
-                                            </div>
-                                            {gradeRecord.teacher && (
-                                                <div className="grader-info">
-                                                    <div className="grader-details">
-                                                        <h6>👤 Graded by:</h6>
-                                                        <p><strong>{gradeRecord.teacher.fullName}</strong></p>
-                                                        <p>📧 {gradeRecord.teacher.email}</p>
-                                                        <p>📞 {gradeRecord.teacher.phone}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {gradeRecord.feedback && (
-                                                <div className="individual-feedback">
-                                                    <h6>💬 Feedback:</h6>
-                                                    <div className="feedback-content">
-                                                        <p>{gradeRecord.feedback}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div className="grade-date">
-                                                <small>
-                                                    📅 Graded: {formatDateToVietnam(gradeRecord.createdAt)}
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Grade Statistics */}
-                            <div className="grade-statistics">
-                                <h5>📈 Grade Summary</h5>
-                                <div className="stats-grid">
-                                    <div className="stat-item">
-                                        <span className="stat-label">Total Grades:</span>
-                                        <span className="stat-value">{thesis.grades.length}</span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <span className="stat-label">Average Grade:</span>
-                                        <span className="stat-value" style={{ color: getGradeDisplay(finalGrade).color }}>
-                                            {finalGrade || 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <span className="stat-label">Highest Grade:</span>
-                                        <span className="stat-value" style={{ color: '#28a745' }}>
-                                            {thesis.grades.length > 0 ? Math.max(...thesis.grades.map(g => g.grade)) : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <span className="stat-label">Lowest Grade:</span>
-                                        <span className="stat-value" style={{ color: '#dc3545' }}>
-                                            {thesis.grades.length > 0 ? Math.min(...thesis.grades.map(g => g.grade)) : 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* No grades message */}
-                    {(!thesis.grades || thesis.grades.length === 0) && (
-                        <div className="no-grade-message">
-                            <div className="info-box">
-                                <h4>📋 Grading Status</h4>
-                                <p>Your thesis is currently being evaluated by the thesis committee. You will be notified once grading is complete.</p>
-                                
-                                <div className="grading-process-info">
-                                    <h5>🔄 Grading Process:</h5>
-                                    <ul>
-                                        <li><strong>Step 1:</strong> Supervisor evaluation</li>
-                                        <li><strong>Step 2:</strong> External reviewer assessment</li>
-                                        <li><strong>Step 3:</strong> Committee member evaluations</li>
-                                        <li><strong>Step 4:</strong> Final grade calculation</li>
-                                    </ul>
-                                </div>
-                                
-                                <div className="grading-tips">
-                                    <h5>📝 What you can do:</h5>
-                                    <ul>
-                                        <li>Ensure all required materials are submitted</li>
-                                        <li>Contact your supervisor if you have questions</li>
-                                        <li>Check back regularly for updates</li>
-                                        <li>Prepare for potential defense presentation</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
-            </div>
+
+                {/* Committee Members with Grades */}
+                {(thesis.supervisor || thesis.reviewer || (thesis.committee && thesis.committee.length > 0)) ? (
+                    <div className="committee-grades-section">
+                        <h4 className="section-title">👥 Committee Members & Individual Grades</h4>
+                        <div className="committee-grades-grid">
+                            
+                            {/* Supervisor Card */}
+                            {thesis.supervisor && (
+                                <div className="committee-grade-card supervisor">
+                                    <div className="committee-member-header">
+                                        <span className="member-role-icon">👨‍🏫</span>
+                                        <div className="member-role-info">
+                                            <h5 className="member-role-title">Supervisor</h5>
+                                            <p className="member-name">{thesis.supervisor.fullName || `${thesis.supervisor.firstName} ${thesis.supervisor.lastName}`}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="member-contact-info">
+                                        <div className="contact-item">
+                                            <span className="contact-icon">📧</span>
+                                            <span className="contact-value">{thesis.supervisor.email}</span>
+                                        </div>
+                                        {thesis.supervisor.phone && (
+                                            <div className="contact-item">
+                                                <span className="contact-icon">📞</span>
+                                                <span className="contact-value">{thesis.supervisor.phone}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="member-grade-section">
+                                        <div className="grade-header">
+                                            <h6>📊 Grade</h6>
+                                        </div>
+                                        <div className="grade-display">
+                                            <span 
+                                                className="grade-value"
+                                                style={{ color: getGradeDisplay(thesis.supervisor.grade).color }}
+                                            >
+                                                {getGradeDisplay(thesis.supervisor.grade).text}
+                                            </span>
+                                            {thesis.supervisor.gradedAt && (
+                                                <small className="grade-date">
+                                                    Graded: {formatDateTime(thesis.supervisor.gradedAt)}
+                                                </small>
+                                            )}
+                                        </div>
+                                        
+                                        {thesis.supervisor.feedback && (
+                                            <div className="feedback-section">
+                                                <h6>💬 Feedback</h6>
+                                                <div className="feedback-content">
+                                                    <p>{thesis.supervisor.feedback}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {!thesis.supervisor.grade && (
+                                            <div className="no-grade-notice">
+                                                <p>⏳ Evaluation pending</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Reviewer Card */}
+                            {thesis.reviewer && (
+                                <div className="committee-grade-card reviewer">
+                                    <div className="committee-member-header">
+                                        <span className="member-role-icon">👨‍💼</span>
+                                        <div className="member-role-info">
+                                            <h5 className="member-role-title">External Reviewer</h5>
+                                            <p className="member-name">{thesis.reviewer.fullName || `${thesis.reviewer.firstName} ${thesis.reviewer.lastName}`}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="member-contact-info">
+                                        <div className="contact-item">
+                                            <span className="contact-icon">📧</span>
+                                            <span className="contact-value">{thesis.reviewer.email}</span>
+                                        </div>
+                                        {thesis.reviewer.phone && (
+                                            <div className="contact-item">
+                                                <span className="contact-icon">📞</span>
+                                                <span className="contact-value">{thesis.reviewer.phone}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="member-grade-section">
+                                        <div className="grade-header">
+                                            <h6>📊 Grade</h6>
+                                        </div>
+                                        <div className="grade-display">
+                                            <span 
+                                                className="grade-value"
+                                                style={{ color: getGradeDisplay(thesis.reviewer.grade).color }}
+                                            >
+                                                {getGradeDisplay(thesis.reviewer.grade).text}
+                                            </span>
+                                            {thesis.reviewer.gradedAt && (
+                                                <small className="grade-date">
+                                                    Graded: {formatDateTime(thesis.reviewer.gradedAt)}
+                                                </small>
+                                            )}
+                                        </div>
+                                        
+                                        {thesis.reviewer.feedback && (
+                                            <div className="feedback-section">
+                                                <h6>💬 Feedback</h6>
+                                                <div className="feedback-content">
+                                                    <p>{thesis.reviewer.feedback}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {!thesis.reviewer.grade && (
+                                            <div className="no-grade-notice">
+                                                <p>⏳ Evaluation pending</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Committee Members Cards */}
+                            {thesis.committee && thesis.committee.length > 0 && thesis.committee.map((member, index) => (
+                                <div key={`committee-${member.id || index}`} className="committee-grade-card committee">
+                                    <div className="committee-member-header">
+                                        <span className="member-role-icon">👥</span>
+                                        <div className="member-role-info">
+                                            <h5 className="member-role-title">Committee Member {index + 1}</h5>
+                                            <p className="member-name">{member.fullName || `${member.firstName} ${member.lastName}`}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="member-contact-info">
+                                        <div className="contact-item">
+                                            <span className="contact-icon">📧</span>
+                                            <span className="contact-value">{member.email}</span>
+                                        </div>
+                                        {member.phone && (
+                                            <div className="contact-item">
+                                                <span className="contact-icon">📞</span>
+                                                <span className="contact-value">{member.phone}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="member-grade-section">
+                                        <div className="grade-header">
+                                            <h6>📊 Grade</h6>
+                                        </div>
+                                        <div className="grade-display">
+                                            <span 
+                                                className="grade-value"
+                                                style={{ color: getGradeDisplay(member.grade).color }}
+                                            >
+                                                {getGradeDisplay(member.grade).text}
+                                            </span>
+                                            {member.gradedAt && (
+                                                <small className="grade-date">
+                                                    Graded: {formatDateTime(member.gradedAt)}
+                                                </small>
+                                            )}
+                                        </div>
+                                        
+                                        {member.feedback && (
+                                            <div className="feedback-section">
+                                                <h6>💬 Feedback</h6>
+                                                <div className="feedback-content">
+                                                    <p>{member.feedback}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {!member.grade && (
+                                            <div className="no-grade-notice">
+                                                <p>⏳ Evaluation pending</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Updated Grade Statistics */}
+                        <div className="grade-statistics">
+                            <h5>📈 Grade Summary</h5>
+                            <div className="stats-grid">
+                                <div className="stat-item">
+                                    <span className="stat-label">Total Evaluators:</span>
+                                    <span className="stat-value">
+                                        {(thesis.supervisor ? 1 : 0) + (thesis.reviewer ? 1 : 0) + (thesis.committee ? thesis.committee.length : 0)}
+                                    </span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label">Graded:</span>
+                                    <span className="stat-value">
+                                        {(thesis.supervisor?.grade ? 1 : 0) + (thesis.reviewer?.grade ? 1 : 0) + (thesis.committee?.filter(m => m.grade).length || 0)} / {(thesis.supervisor ? 1 : 0) + (thesis.reviewer ? 1 : 0) + (thesis.committee ? thesis.committee.length : 0)}
+                                    </span>
+                                </div>
+                                <div className="stat-item">
+                                    <span className="stat-label">Overall Grade:</span>
+                                    <span className="stat-value" style={{ color: getGradeDisplay(thesis.finalGrade).color }}>
+                                        {thesis.finalGrade || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="no-committee-message">
+                        <div className="info-box">
+                            <h4>📋 Committee Assignment Status</h4>
+                            <p>🏛️ Your thesis committee has not been fully assigned yet.</p>
+                            
+                            <div className="assignment-info">
+                                <h5>📝 Assignment Process:</h5>
+                                <ul>
+                                    <li><strong>Step 1:</strong> Supervisor assignment {thesis.supervisor ? '✓ Complete' : '⏳ Pending'}</li>
+                                    <li><strong>Step 2:</strong> External reviewer assignment {thesis.reviewer ? '✓ Complete' : '⏳ Pending'}</li>
+                                    <li><strong>Step 3:</strong> Committee members assignment {thesis.committee?.length > 0 ? '✓ Complete' : '⏳ Pending'}</li>
+                                    <li><strong>Step 4:</strong> Defense scheduling {thesis.defenseDate ? '✓ Scheduled' : '⏳ Pending'}</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="next-steps">
+                                <h5>🔄 What happens next:</h5>
+                                <ul>
+                                    <li>Your supervisor will coordinate the committee assignment</li>
+                                    <li>You'll be notified when committee members are assigned</li>
+                                    <li>Grading will begin after all materials are submitted</li>
+                                    <li>Defense date will be scheduled once committee is complete</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div><br /><br />
             
             <h1>Submission</h1>
-            <div className="prethesis-submission-card">
+            <div className="thesis-submission-card">
                 {/* Deadline Information */}
                 {thesis.submissionDeadline && (
                     <div className={`deadline-info ${!thesis.isSubmissionAllowed ? 'deadline-passed' : ''}`}>
@@ -751,7 +799,7 @@ const ThesisHome = () => {
                         <li>Contact your supervisor if you encounter any issues</li>
                     </ul>
                 </div>
-                
+
                 {/* Report Submission */}
                 <div className="submission-section">
                     <h3 className="submission-type-title">Report Submission</h3>
@@ -767,13 +815,13 @@ const ThesisHome = () => {
                                     name="file"
                                     accept=".pdf"
                                     className="file-input"
-                                    disabled={uploading && uploadType === 'report'}
+                                    disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'report')}
                                 />
                             </div>
                             <button
                                 type="submit"
                                 className={`submit-btn ${thesis.report ? 'resubmit' : 'initial'}`}
-                                disabled={uploading && uploadType === 'report'}
+                                disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'report')}
                             >
                                 {uploading && uploadType === 'report' ? (
                                     <span>
@@ -819,13 +867,13 @@ const ThesisHome = () => {
                                     name="file"
                                     accept=".zip,.rar"
                                     className="file-input"
-                                    disabled={uploading && uploadType === 'project'}
+                                    disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'project')}
                                 />
                             </div>
                             <button
                                 type="submit"
                                 className={`submit-btn ${thesis.project ? 'resubmit' : 'initial'}`}
-                                disabled={uploading && uploadType === 'project'}
+                                disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'project')}
                             >
                                 {uploading && uploadType === 'project' ? (
                                     <span>
@@ -871,13 +919,13 @@ const ThesisHome = () => {
                                     name="file"
                                     accept=".pdf,.ppt,.pptx"
                                     className="file-input"
-                                    disabled={uploading && uploadType === 'presentation'}
+                                    disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'presentation')}
                                 />
                             </div>
                             <button
                                 type="submit"
                                 className={`submit-btn ${thesis.presentation ? 'resubmit' : 'initial'}`}
-                                disabled={uploading && uploadType === 'presentation'}
+                                disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'presentation')}
                             >
                                 {uploading && uploadType === 'presentation' ? (
                                     <span>
@@ -925,13 +973,13 @@ const ThesisHome = () => {
                                     onChange={(e) => setDemoUrl(e.target.value)}
                                     placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
                                     className="url-input"
-                                    disabled={uploading && uploadType === 'demo'}
+                                    disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'demo')}
                                 />
                             </div>
                             <button
                                 type="submit"
                                 className={`submit-btn ${thesis.demo ? 'resubmit' : 'initial'}`}
-                                disabled={uploading && uploadType === 'demo'}
+                                disabled={!thesis.isSubmissionAllowed || (uploading && uploadType === 'demo')}
                             >
                                 {uploading && uploadType === 'demo' ? (
                                     <span>

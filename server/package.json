@@ -22,9 +22,11 @@
     "joi": "^17.13.3",
     "joi-password-complexity": "^5.2.0",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.1",
     "mongoose": "^8.15.0",
     "multer": "^2.0.0",
     "mysql2": "^3.12.0",
+    "pdfkit": "^0.17.1",
     "sequelize": "^6.37.6",
     "socket.io": "^4.8.1"
   },

@@ -373,15 +373,15 @@ const PreThesisHome = () => {
                     <table className="prethesis-info-table">
                         <tbody>
                             <tr>
-                                <td className="table-label">Full Name:</td>
+                                <td className="label">Full Name:</td>
                                 <td className="table-value" style={{ color: "#2096f2" }}>{teacher.fullName}</td>
                             </tr>
                             <tr>
-                                <td className="table-label">Email:</td>
+                                <td className="label">Email:</td>
                                 <td className="table-value" style={{ textTransform: "lowercase" }}>{teacher.email}</td>
                             </tr>
                             <tr>
-                                <td className="table-label">Phone:</td>
+                                <td className="label">Phone:</td>
                                 <td className="table-value">{teacher.phone}</td>
                             </tr>
                         </tbody>
@@ -392,19 +392,23 @@ const PreThesisHome = () => {
                     <table className="prethesis-info-table">
                         <tbody>
                             <tr>
-                                <td className="table-label">Title:</td>
+                                <td className="label">Title:</td>
                                 <td className="table-value">{preThesis.title}</td>
                             </tr>
                             <tr>
-                                <td className="table-label">Description:</td>
+                                <td className="label">Topic:</td>
+                                <td className="value">{topic?.topic}</td>
+                            </tr>
+                            <tr>
+                                <td className="label">Description:</td>
                                 <td className="table-value">{preThesis.description}</td>
                             </tr>
                             <tr>
-                                <td className="table-label">Status:</td>
+                                <td className="label">Status:</td>
                                 <td className="table-value">{preThesis.status}</td>
                             </tr>
                             <tr>
-                                <td className="table-label">Report (Required):</td>
+                                <td className="label">Report (Required):</td>
                                 <td className="table-value">
                                     {preThesis.report ? (
                                         <span style={{ color: "#28a745" }}>✓ Submitted</span>
@@ -414,7 +418,7 @@ const PreThesisHome = () => {
                                 </td>
                             </tr>
                             <tr>
-                                <td className="table-label">Project File (Required):</td>
+                                <td className="label">Project File (Required):</td>
                                 <td className="table-value">
                                     {preThesis.project ? (
                                         <span style={{ color: "#28a745" }}>✓ Submitted</span>
@@ -424,7 +428,7 @@ const PreThesisHome = () => {
                                 </td>
                             </tr>
                             <tr>
-                                <td className="table-label">Video (Optional):</td>
+                                <td className="label">Video (Optional):</td>
                                 <td className="table-value">
                                     {preThesis.videoUrl ? (
                                         <span style={{ color: "#28a745" }}>✓ Submitted</span>

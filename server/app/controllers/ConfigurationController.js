@@ -45,7 +45,6 @@ class ConfigurationController {
 
             // Make keys unique by including semesterId
             const configurations = [
-                { key: `semester_name_${semesterId}`, name: 'Semester Name', value: name, scope: 'semester', semesterId },
                 { key: `start_date_${semesterId}`, name: 'Start Date', value: startDate, scope: 'semester', semesterId },
                 { key: `end_date_${semesterId}`, name: 'End Date', value: endDate, scope: 'semester', semesterId },
                 { key: `pre_thesis_registration_deadline_${semesterId}`, name: 'Pre-Thesis Registration Deadline', value: preThesisRegistrationDeadline || '', scope: 'semester', semesterId },

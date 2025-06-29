@@ -11,7 +11,7 @@ export default function TeacherSidebar() {
 
     // Sort semesters by startDate, latest first
     const sortedSemesters = [...semesters].sort(
-        (a, b) => new Date(b.semester.startDate) - new Date(a.semester.startDate)
+        (a, b) => new Date(b.startDate) - new Date(a.startDate)
     );
 
     return (
@@ -19,7 +19,7 @@ export default function TeacherSidebar() {
             <div className="sidebar-content">
                 {sortedSemesters && sortedSemesters.length > 0 ? (
                     sortedSemesters.map((sem, idx) => (
-                        <div className="section" key={sem.semesterId || idx}>
+                        <div className="section" key={sem.id || idx}>
                             <div
                                 className="section-title"
                                 onClick={() => setOpenSemester(openSemester === idx ? null : idx)}
@@ -28,17 +28,15 @@ export default function TeacherSidebar() {
                                     display: "flex",
                                     justifyContent: "space-between",
                                     alignItems: "center",
-                                 }}
+                                }}
                             >
-                                {sem.semester.name}
+                                {sem.name}
                                 <img
                                     src={openSemester === idx ? "/caret-up.svg" : "/caret-down.svg"}
                                     alt="caret"
                                     className="caret"
                                     style={{ marginLeft: 8}}
                                 />
-
-
                             </div>
                             {openSemester === idx && (
                                 <div className="section-content">

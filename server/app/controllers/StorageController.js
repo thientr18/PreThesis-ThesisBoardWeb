@@ -470,76 +470,84 @@ class StorageController {
     }
 
     submitThesisDemoUrl = async (req, res) => {
-        const userId = req.user.id;
-        const thesisId = req.params.thesisId;
-        const { demoUrl } = req.body;
+    const userId = req.user.id;
+    const thesisId = req.params.thesisId;
+    const { demoUrl } = req.body;
+    
+    try {
+        // Get student
+        const student = await models.Student.findOne({
+            where: { userId: userId }
+        });
         
-        try {
-            // Get student
-            const student = await models.Student.findOne({
-                where: { userId: userId }
+        if (!student) return res.status(404).json({ message: "Student not found" });
+        if (student.status !== 'active') return res.status(400).json({ message: "Student not active" });
+
+        // Validate demo URL
+        if (!demoUrl || !demoUrl.trim()) {
+            return res.status(400).json({ message: "Demo URL is required" });
+        }
+
+        // Find thesis and verify ownership
+        const thesis = await models.Thesis.findOne({
+            where: {
+                id: thesisId,
+                studentId: student.id
+            },
+            include: [
+                {
+                    model: models.ThesisTeacher,
+                    as: 'thesisTeachers',
+                    where: { role: 'supervisor' },
+                    include: [
+                        {
+                            model: models.Teacher,
+                            as: 'teacher',
+                            attributes: ['id', 'fullName', 'userId']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!thesis) {
+            return res.status(404).json({ message: "Thesis not found or access denied" });
+        }
+
+        // Check submission deadline
+        const deadlineCheck = await this.checkThesisDeadline(thesis.semesterId);
+        if (!deadlineCheck.allowed) {
+            return res.status(400).json({ 
+                message: `Submission deadline has passed. Deadline was: ${deadlineCheck.deadlineString}`,
+                deadline: deadlineCheck.deadlineString
             });
-            
-            if (!student) return res.status(404).json({ message: "Student not found" });
-            if (student.status !== 'active') return res.status(400).json({ message: "Student not active" });
+        }
 
-            // Validate demo URL
-            if (!demoUrl || !demoUrl.trim()) {
-                return res.status(400).json({ message: "Demo URL is required" });
-            }
+        // Update Thesis with video URL
+        await thesis.update({ videoUrl: demoUrl.trim() });
 
-            // Find thesis and verify ownership
-            const thesis = await models.Thesis.findOne({
-                where: {
-                    id: thesisId,
-                    studentId: student.id
-                },
-                include: [
-                    {
-                        model: models.Teacher,
-                        as: 'supervisor',
-                        attributes: ['id', 'fullName']
-                    }
-                ]
-            });
-
-            if (!thesis) {
-                return res.status(404).json({ message: "Thesis not found or access denied" });
-            }
-
-            // Check submission deadline
-            const deadlineCheck = await this.checkThesisDeadline(thesis.semesterId);
-            if (!deadlineCheck.allowed) {
-                return res.status(400).json({ 
-                    message: `Submission deadline has passed. Deadline was: ${deadlineCheck.deadlineString}`,
-                    deadline: deadlineCheck.deadlineString
-                });
-            }
-
-            // Update Thesis with video URL
-            await thesis.update({ videoUrl: demoUrl.trim() });
-
-            const teacher = await models.Teacher.findOne({
-                where: { id: thesis.supervisor.id }
-            });
-
+        // Get supervisor from thesisTeachers
+        const supervisor = thesis.thesisTeachers?.[0]?.teacher;
+        
+        if (supervisor) {
             // Create notification for supervisor
             await createNotification({
-                recipientId: teacher.userId,
+                recipientId: supervisor.userId,
                 type: 'message',
                 title: 'Demo Submission',
                 message: `Student ${student.fullName} has submitted a demo for thesis ${thesis.title}`,
             });
-
-            return res.status(200).json({ 
-                message: "Demo URL submitted successfully",
-                demoUrl: demoUrl.trim()
-            });
-
-        } catch (error) {
-            console.error('Error submitting demo URL:', error);
-            return res.status(500).json({ message: 'Internal server error' });
         }
+
+        return res.status(200).json({ 
+            message: "Demo URL submitted successfully",
+            demoUrl: demoUrl.trim()
+        });
+
+    } catch (error) {
+        console.error('Error submitting demo URL:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
     }
 
     submitThesisReport = async (req, res) => {
@@ -570,9 +578,16 @@ class StorageController {
                 },
                 include: [
                     {
-                        model: models.Teacher,
-                        as: 'supervisor',
-                        attributes: ['id', 'fullName']
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: { role: 'supervisor' },
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'userId']
+                            }
+                        ]
                     }
                 ]
             });
@@ -603,17 +618,18 @@ class StorageController {
                 submittedAt: new Date()
             });
 
-            const teacher = await models.Teacher.findOne({
-                where: { id: thesis.supervisor.id }
-            });
-
-            // Create notification for supervisor
-            await createNotification({
-                recipientId: teacher.userId,
-                type: 'message',
-                title: 'Thesis Report Submission',
-                message: `Student ${student.fullName} has submitted a report for thesis ${thesis.title}`,
-            });
+            // Get supervisor from thesisTeachers
+            const supervisor = thesis.thesisTeachers?.[0]?.teacher;
+            
+            if (supervisor) {
+                // Create notification for supervisor
+                await createNotification({
+                    recipientId: supervisor.userId,
+                    type: 'message',
+                    title: 'Thesis Report Submission',
+                    message: `Student ${student.fullName} has submitted a report for thesis ${thesis.title}`,
+                });
+            }
 
             return res.status(200).json({ 
                 message: "Report submitted successfully",
@@ -654,9 +670,16 @@ class StorageController {
                 },
                 include: [
                     {
-                        model: models.Teacher,
-                        as: 'supervisor',
-                        attributes: ['id', 'fullName']
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: { role: 'supervisor' },
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'userId']
+                            }
+                        ]
                     }
                 ]
             });
@@ -687,17 +710,18 @@ class StorageController {
                 submittedAt: new Date()
             });
 
-            const teacher = await models.Teacher.findOne({
-                where: { id: thesis.supervisor.id }
-            });
-
-            // Create notification for supervisor
-            await createNotification({
-                recipientId: teacher.userId,
-                type: 'message',
-                title: 'Thesis Project Submission',
-                message: `Student ${student.fullName} has submitted a project file for thesis ${thesis.title}`,
-            });
+            // Get supervisor from thesisTeachers
+            const supervisor = thesis.thesisTeachers?.[0]?.teacher;
+            
+            if (supervisor) {
+                // Create notification for supervisor
+                await createNotification({
+                    recipientId: supervisor.userId,
+                    type: 'message',
+                    title: 'Thesis Project Submission',
+                    message: `Student ${student.fullName} has submitted a project file for thesis ${thesis.title}`,
+                });
+            }
 
             return res.status(200).json({ 
                 message: "Project submitted successfully",
@@ -738,9 +762,16 @@ class StorageController {
                 },
                 include: [
                     {
-                        model: models.Teacher,
-                        as: 'supervisor',
-                        attributes: ['id', 'fullName']
+                        model: models.ThesisTeacher,
+                        as: 'thesisTeachers',
+                        where: { role: 'supervisor' },
+                        include: [
+                            {
+                                model: models.Teacher,
+                                as: 'teacher',
+                                attributes: ['id', 'fullName', 'userId']
+                            }
+                        ]
                     }
                 ]
             });
@@ -771,17 +802,18 @@ class StorageController {
                 submittedAt: new Date()
             });
 
-            const teacher = await models.Teacher.findOne({
-                where: { id: thesis.supervisor.id }
-            });
-
-            // Create notification for supervisor
-            await createNotification({
-                recipientId: teacher.userId,
-                type: 'message',
-                title: 'Thesis Presentation Submission',
-                message: `Student ${student.fullName} has submitted a presentation for thesis ${thesis.title}`,
-            });
+            // Get supervisor from thesisTeachers
+            const supervisor = thesis.thesisTeachers?.[0]?.teacher;
+            
+            if (supervisor) {
+                // Create notification for supervisor
+                await createNotification({
+                    recipientId: supervisor.userId,
+                    type: 'message',
+                    title: 'Thesis Presentation Submission',
+                    message: `Student ${student.fullName} has submitted a presentation for thesis ${thesis.title}`,
+                });
+            }
 
             return res.status(200).json({ 
                 message: "Presentation submitted successfully",
@@ -790,74 +822,6 @@ class StorageController {
 
         } catch (error) {
             console.error('Error submitting thesis presentation:', error);
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-    }
-
-    async downloadFileThesis(req, res) {
-        const { filename } = req.params;
-        const userId = req.user.id;
-        
-        try {
-            // Get student for basic authentication
-            const student = await models.Student.findOne({
-                where: { userId: userId }
-            });
-            
-            if (!student) return res.status(404).json({ message: "Student not found" });
-            if (student.status !== 'active') return res.status(400).json({ message: "Student not active" });
-            
-            if (!filename) {
-                console.error('Filename parameter is missing');
-                return res.status(400).json({ message: 'Filename parameter is required' });
-            }
-
-            const filePath = path.join(__dirname, '../../uploads/thesis', filename);
-            console.log('Constructed file path:', filePath);
-            
-            if (!fs.existsSync(filePath)) {
-                console.error('File does not exist at path:', filePath);
-                return res.status(404).json({ message: 'File not found' });
-            }
-
-            // Verify the student has access to this file
-            const submission = await models.ThesisSubmission.findOne({
-                where: {
-                    fileUrl: `/uploads/thesis/${filename}`
-                }
-            });
-
-            if (!submission) {
-                console.error('File submission not found in database');
-                return res.status(404).json({ message: 'File not found in database' });
-            }
-
-            // Verify the student owns the thesis associated with this submission
-            const thesis = await models.Thesis.findOne({
-                where: {
-                    id: submission.thesisId,
-                    studentId: student.id
-                }
-            });
-
-            if (!thesis) {
-                console.error('Student does not have access to this file');
-                return res.status(403).json({ message: 'Access denied to this file' });
-            }
-
-            // Extract original filename for download (remove timestamp prefix)
-            // Pattern: thesis-{timestamp}-{originalName}.{extension}
-            const originalFileName = filename.replace(/^thesis-\d+-\d+-/, '');
-            
-            // Set headers for download with original filename
-            res.setHeader('Content-Disposition', `attachment; filename="${originalFileName}"`);
-            res.setHeader('Content-Type', 'application/octet-stream');
-            
-            console.log('Serving file:', filePath, 'as:', originalFileName);
-            res.download(filePath, originalFileName);
-            
-        } catch (error) {
-            console.error('Error downloading thesis file:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
     }
@@ -888,7 +852,7 @@ class StorageController {
                 return res.status(404).json({ message: 'File not found' });
             }
 
-            // Verify the teacher has access to this file (supervises the thesis)
+            // Verify the teacher has access to this file (has role in the thesis)
             const submission = await models.ThesisSubmission.findOne({
                 where: {
                     fileUrl: `/uploads/thesis/${filename}`
@@ -900,15 +864,21 @@ class StorageController {
                 return res.status(404).json({ message: 'File not found in database' });
             }
 
-            // Verify the teacher supervises the thesis associated with this submission
-            const thesis = await models.Thesis.findOne({
+            // Verify the teacher has access to the thesis through ThesisTeacher
+            const thesisTeacher = await models.ThesisTeacher.findOne({
                 where: {
-                    id: submission.thesisId,
-                    supervisorId: teacher.id
-                }
+                    thesisId: submission.thesisId,
+                    teacherId: teacher.id
+                },
+                include: [
+                    {
+                        model: models.Thesis,
+                        as: 'thesis'
+                    }
+                ]
             });
 
-            if (!thesis) {
+            if (!thesisTeacher) {
                 console.error('Teacher does not have access to this file');
                 return res.status(403).json({ message: 'Access denied to this file' });
             }
@@ -927,6 +897,74 @@ class StorageController {
             console.error('Error downloading thesis file:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
+    }
+
+    async downloadFileThesis(req, res) {
+        const { filename } = req.params;
+        const userId = req.user.id;
+
+        try {
+            // Get student for basic authentication
+            const student = await models.Student.findOne({
+                where: { userId: userId }
+            });
+
+                if (!student) return res.status(404).json({ message: "Student not found" });
+                if (student.status !== 'active') return res.status(400).json({ message: "Student not active" });
+                
+                if (!filename) {
+                    console.error('Filename parameter is missing');
+                    return res.status(400).json({ message: 'Filename parameter is required' });
+                }
+
+                const filePath = path.join(__dirname, '../../uploads/thesis', filename);
+                console.log('Constructed file path:', filePath);
+                
+                if (!fs.existsSync(filePath)) {
+                    console.error('File does not exist at path:', filePath);
+                    return res.status(404).json({ message: 'File not found' });
+                }
+
+                // Verify the student has access to this file
+                const submission = await models.ThesisSubmission.findOne({
+                    where: {
+                        fileUrl: `/uploads/thesis/${filename}`
+                    }
+                });
+
+                if (!submission) {
+                    console.error('File submission not found in database');
+                    return res.status(404).json({ message: 'File not found in database' });
+                }
+
+                // Verify the student owns the thesis associated with this submission
+                const thesis = await models.Thesis.findOne({
+                    where: {
+                        id: submission.thesisId,
+                        studentId: student.id
+                    }
+                });
+
+                if (!thesis) {
+                    console.error('Student does not have access to this file');
+                    return res.status(403).json({ message: 'Access denied to this file' });
+                }
+
+                // Extract original filename for download (remove timestamp prefix)
+                // Pattern: thesis-{timestamp}-{originalName}.{extension}
+                const originalFileName = filename.replace(/^thesis-\d+-\d+-/, '');
+                
+                // Set headers for download with original filename
+                res.setHeader('Content-Disposition', `attachment; filename="${originalFileName}"`);
+                res.setHeader('Content-Type', 'application/octet-stream');
+                
+                console.log('Serving file:', filePath, 'as:', originalFileName);
+                res.download(filePath, originalFileName);
+                
+            } catch (error) {
+                console.error('Error downloading thesis file:', error);
+                return res.status(500).json({ message: 'Internal server error' });
+            }
     }
 
     async deleteFile(req, res) { }
